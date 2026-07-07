@@ -1,5 +1,5 @@
 #!/bin/bash
-# AugurMS Client Publisher — Upload patched WZ files to R2 and bump launcher manifest
+# ElinMS Client Publisher — Upload patched WZ files to R2 and bump launcher manifest
 #
 # Usage:
 #   ./tools/publish_client.sh [patched-dir]
@@ -11,7 +11,7 @@
 set -euo pipefail
 
 PATCHED_DIR="${1:-./patched}"
-DASHBOARD_URL="${DASHBOARD_URL:-https://augurms.com}"
+DASHBOARD_URL="${DASHBOARD_URL:-https://elinms.com}"
 R2_BUCKET="augurms-client"
 
 if [ ! -d "$PATCHED_DIR" ]; then
@@ -20,7 +20,7 @@ if [ ! -d "$PATCHED_DIR" ]; then
   exit 1
 fi
 
-echo "=== AugurMS Client Publisher ==="
+echo "=== ElinMS Client Publisher ==="
 echo "Source: $PATCHED_DIR"
 echo ""
 

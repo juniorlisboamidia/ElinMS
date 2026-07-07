@@ -158,7 +158,7 @@ const toolHandlers: Record<string, (args: any) => Promise<string>> = {
     const guides: Record<string, string> = {
       hp_washing: [
         "HP WASHING ON AUGURMS:",
-        "HP washing is NOT needed on AugurMS. The server has a built-in bonus HP system.",
+        "HP washing is NOT needed on ElinMS. The server has a built-in bonus HP system.",
         "Config: BONUS_HP_PER_LEVEL grants extra HP every level. ALWAYS call get_server_config to check the current value.",
         "Players use the @recalchp command to claim their accumulated bonus HP.",
         "Formula: totalBonusHP = (level - 1) * BONUS_HP_PER_LEVEL. The command calculates what's owed and grants the difference.",
@@ -342,7 +342,7 @@ const toolHandlers: Record<string, (args: any) => Promise<string>> = {
 
       voting: [
         "VOTING & VOTE POINTS:",
-        "  Vote for AugurMS on server ranking sites to earn vote points",
+        "  Vote for ElinMS on server ranking sites to earn vote points",
         "  Check your points with @points command in-game",
         "  Vote point shops are placed by the AI Game Master in popular towns",
         "  Voting helps the server grow (higher ranking = more new players)",
@@ -520,7 +520,7 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "get_game_guide",
-      description: "Get detailed game mechanics guide for a specific topic. Returns AugurMS-specific information including formulas, commands, and strategies. Always use this when players ask gameplay questions.",
+      description: "Get detailed game mechanics guide for a specific topic. Returns ElinMS-specific information including formulas, commands, and strategies. Always use this when players ask gameplay questions.",
       parameters: {
         type: "object",
         properties: {

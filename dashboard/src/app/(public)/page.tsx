@@ -67,8 +67,8 @@ export default function LandingPage() {
       <nav className="relative z-10 px-4 py-4 sm:px-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Image src="/logo.png" alt="AugurMS" width={44} height={44} className="drop-shadow-[0_0_12px_rgba(245,197,66,0.3)]" />
-            <span className="text-xl font-bold tracking-wide">AugurMS</span>
+            <Image src="/logo.png" alt="ElinMS" width={44} height={44} className="drop-shadow-[0_0_12px_rgba(245,197,66,0.3)]" />
+            <span className="text-xl font-bold tracking-wide">ElinMS</span>
           </div>
 
           {/* Desktop links */}
@@ -79,7 +79,7 @@ export default function LandingPage() {
             <Link href="/rankings" className="rounded-lg px-4 py-2 text-sm font-medium text-text-secondary transition hover:text-text-primary">
               Rankings
             </Link>
-            <a href="https://github.com/themrzmaster/augurms" target="_blank" rel="noopener noreferrer" className="rounded-lg px-4 py-2 text-sm font-medium text-text-secondary transition hover:text-text-primary">
+            <a href="https://github.com/juniorlisboamidia/ElinMS" target="_blank" rel="noopener noreferrer" className="rounded-lg px-4 py-2 text-sm font-medium text-text-secondary transition hover:text-text-primary">
               GitHub
             </a>
             <Link href="/vote" className="rounded-lg px-4 py-2 text-sm font-medium text-text-secondary transition hover:text-text-primary">
@@ -135,7 +135,7 @@ export default function LandingPage() {
               </Link>
             ))}
             <a
-              href="https://github.com/themrzmaster/augurms"
+              href="https://github.com/juniorlisboamidia/ElinMS"
               target="_blank"
               rel="noopener noreferrer"
               className="block rounded-lg px-4 py-2.5 text-sm font-medium text-text-secondary transition hover:bg-bg-card hover:text-text-primary"
@@ -153,7 +153,7 @@ export default function LandingPage() {
           <div className="absolute inset-0 scale-150 rounded-full bg-accent-gold/[0.06] blur-3xl" />
           <Image
             src="/logo.png"
-            alt="AugurMS"
+            alt="ElinMS"
             width={220}
             height={220}
             priority
@@ -244,7 +244,7 @@ export default function LandingPage() {
             Download Client
           </a>
           <a
-            href="https://play.augurms.com"
+            href="https://play.elinms.com"
             target="_blank"
             rel="noopener noreferrer"
             className="group inline-flex items-center gap-2 rounded-xl border border-accent-purple/40 bg-accent-purple/[0.06] px-6 py-3.5 text-base font-medium text-accent-purple transition hover:bg-accent-purple/[0.12] hover:shadow-[0_0_24px_rgba(167,139,250,0.25)]"
@@ -426,7 +426,7 @@ export default function LandingPage() {
         <div className="mt-20 w-full max-w-4xl">
           <h2 className="mb-2 text-center text-2xl font-bold">Your Voice Matters</h2>
           <p className="mb-8 text-center text-sm text-text-secondary">
-            AugurMS is shaped by its players. Talk to the AI, vote for the server, and earn rewards.
+            ElinMS is shaped by its players. Talk to the AI, vote for the server, and earn rewards.
           </p>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             <div className="rounded-xl border border-border bg-bg-card/50 p-6 backdrop-blur-sm transition hover:border-border-light">
@@ -445,7 +445,7 @@ export default function LandingPage() {
               <div className="mb-3 text-2xl">{"\uD83D\uDDF3\uFE0F"}</div>
               <h3 className="mb-2 font-semibold text-text-primary">Vote &amp; Earn</h3>
               <p className="text-sm leading-relaxed text-text-secondary">
-                <Link href="/vote" className="font-medium text-accent-gold underline underline-offset-2">Vote daily</Link> on GTop100 to help AugurMS grow. Each vote earns <strong className="text-accent-gold">1 Vote Point</strong> you can spend in-game. Check your balance with <span className="rounded bg-bg-primary/80 px-1.5 py-0.5 font-mono text-xs">@points</span>.
+                <Link href="/vote" className="font-medium text-accent-gold underline underline-offset-2">Vote daily</Link> on GTop100 to help ElinMS grow. Each vote earns <strong className="text-accent-gold">1 Vote Point</strong> you can spend in-game. Check your balance with <span className="rounded bg-bg-primary/80 px-1.5 py-0.5 font-mono text-xs">@points</span>.
               </p>
             </div>
             <div className="rounded-xl border border-border bg-bg-card/50 p-6 backdrop-blur-sm transition hover:border-border-light">
@@ -460,7 +460,7 @@ export default function LandingPage() {
 
         {/* Download section */}
         <div id="download" className="mt-20 w-full max-w-3xl scroll-mt-20">
-          <h2 className="mb-2 text-2xl font-bold">Play AugurMS</h2>
+          <h2 className="mb-2 text-2xl font-bold">Play ElinMS</h2>
           <p className="mb-8 text-sm text-text-secondary">
             Three ways to jump in: the <strong className="text-text-primary">Launcher</strong> (recommended) for auto-updates, <strong className="text-text-primary">Manual</strong> install, or play directly in your <strong className="text-text-primary">Browser</strong> — no download.
           </p>
@@ -513,12 +513,12 @@ export default function LandingPage() {
                       Instant play, zero install
                     </h3>
                     <p className="text-xs text-text-secondary">
-                      The full v83 client, running as WebAssembly in your browser. Log in with any AugurMS account.
+                      The full v83 client, running as WebAssembly in your browser. Log in with any ElinMS account.
                     </p>
                   </div>
                 </div>
                 <a
-                  href="https://play.augurms.com"
+                  href="https://play.elinms.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-lg bg-accent-purple px-5 py-2.5 font-semibold text-bg-primary transition hover:bg-accent-purple/90 hover:shadow-[0_0_20px_rgba(167,139,250,0.35)]"
@@ -607,17 +607,17 @@ export default function LandingPage() {
                 <div className="flex items-start gap-4">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-gold/10 text-sm font-bold text-accent-gold">2</span>
                   <div className="flex-1">
-                    <h3 className="mb-1 font-semibold text-text-primary">Install AugurMS Launcher</h3>
+                    <h3 className="mb-1 font-semibold text-text-primary">Install ElinMS Launcher</h3>
                     <p className="mb-3 text-sm text-text-secondary">
                       Download and run the launcher installer. It will auto-detect your MapleStory folder (or let you browse to it). The launcher <strong>automatically downloads and updates</strong> all game files &mdash; no manual file copying needed.
                     </p>
                     <a
-                      href="https://github.com/themrzmaster/augurms/releases/download/launcher-v1.0.2/AugurMS.Setup.1.0.2.exe"
+                      href="https://github.com/juniorlisboamidia/ElinMS/releases/download/launcher-v1.0.2/ElinMS.Setup.1.0.2.exe"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg bg-accent-gold px-5 py-2.5 font-semibold text-bg-primary transition hover:bg-accent-gold/90 hover:shadow-[0_0_20px_rgba(245,197,66,0.3)]"
                     >
-                      Download AugurMS Launcher
+                      Download ElinMS Launcher
                       <span className="text-sm opacity-70">(.exe)</span>
                     </a>
                   </div>
@@ -696,17 +696,17 @@ export default function LandingPage() {
                 <div className="flex items-start gap-4">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-gold/10 text-sm font-bold text-accent-gold">3</span>
                   <div className="flex-1">
-                    <h3 className="mb-1 font-semibold text-text-primary">Download AugurMS client files</h3>
+                    <h3 className="mb-1 font-semibold text-text-primary">Download ElinMS client files</h3>
                     <p className="mb-3 text-sm text-text-secondary">
-                      Download the client pack and extract <strong>everything</strong> (AugurMS.exe + all .wz files) into your MapleStory install folder. Replace existing .wz files when prompted.
+                      Download the client pack and extract <strong>everything</strong> (ElinMS.exe + all .wz files) into your MapleStory install folder. Replace existing .wz files when prompted.
                     </p>
                     <a
-                      href="https://github.com/themrzmaster/augurms/releases/tag/client-v1.0.1"
+                      href="https://github.com/juniorlisboamidia/ElinMS/releases/tag/client-v1.0.1"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 rounded-lg bg-accent-blue px-5 py-2.5 font-semibold text-white transition hover:bg-accent-blue/90 hover:shadow-[0_0_20px_rgba(96,165,250,0.3)]"
                     >
-                      Download AugurMS Client Files
+                      Download ElinMS Client Files
                       <span className="text-sm opacity-70">(~1 GB)</span>
                     </a>
                   </div>
@@ -720,7 +720,7 @@ export default function LandingPage() {
                   <div className="flex-1">
                     <h3 className="mb-1 font-semibold text-text-primary">Create account &amp; play</h3>
                     <p className="text-sm text-text-secondary">
-                      <a href="/register" className="font-medium text-accent-gold underline underline-offset-2">Create an account</a> on this site, then double-click <strong>AugurMS.exe</strong> in your install folder. Log in and enjoy!
+                      <a href="/register" className="font-medium text-accent-gold underline underline-offset-2">Create an account</a> on this site, then double-click <strong>ElinMS.exe</strong> in your install folder. Log in and enjoy!
                     </p>
                   </div>
                 </div>
@@ -738,7 +738,7 @@ export default function LandingPage() {
           {/* Warning */}
           <div className="mt-4 rounded-xl border border-accent-orange/20 bg-accent-orange/5 p-4">
             <p className="text-xs leading-relaxed text-text-secondary">
-              <strong className="text-accent-orange">Windows Security:</strong> AugurMS.exe may be flagged as a virus &mdash; this is a false positive common with all modified game clients. Add your MapleStory install folder as an exclusion in <em>Windows Security &gt; Virus &amp; threat protection settings &gt; Exclusions &gt; Add a folder</em>.
+              <strong className="text-accent-orange">Windows Security:</strong> ElinMS.exe may be flagged as a virus &mdash; this is a false positive common with all modified game clients. Add your MapleStory install folder as an exclusion in <em>Windows Security &gt; Virus &amp; threat protection settings &gt; Exclusions &gt; Add a folder</em>.
             </p>
           </div>
         </div>
@@ -746,7 +746,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="relative z-10 mt-20 border-t border-border px-8 py-8 text-center text-sm text-text-muted">
-        <p>AugurMS &mdash; MapleStory v83 private server. Not affiliated with Nexon.</p>
+        <p>ElinMS &mdash; MapleStory v83 private server. Not affiliated with Nexon.</p>
         <a href="https://discord.gg/pApUkuZjNa" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-accent hover:underline">Join our Discord</a>
       </footer>
     </div>

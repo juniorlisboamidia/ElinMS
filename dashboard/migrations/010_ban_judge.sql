@@ -1,4 +1,4 @@
--- AugurMS Ban Judge Tables
+-- ElinMS Ban Judge Tables
 -- AI agent that runs daily, reviews cheat_flags in context, writes verdicts.
 -- Verdicts land in ban_verdicts for human review; nothing touches accounts.banned
 -- automatically unless auto_apply_threshold is lowered below the verdict confidence.

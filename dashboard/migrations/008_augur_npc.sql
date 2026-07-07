@@ -1,5 +1,5 @@
 -- Augur NPC: AI chatbot with custom sprite
--- Run: flyctl ssh console --app augur-ms-db --command 'mysql -u root -p$(printenv MYSQL_ROOT_PASSWORD) cosmic < /dev/stdin'
+-- Run: flyctl ssh console --app elin-ms-db --command 'mysql -u root -p$(printenv MYSQL_ROOT_PASSWORD) cosmic < /dev/stdin'
 
 CREATE TABLE IF NOT EXISTS augur_config (
   id INT PRIMARY KEY DEFAULT 1,
@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS augur_config (
 
 INSERT INTO augur_config (id, greeting, system_prompt) VALUES (1,
 'I am the Augur... I see the threads of fate that bind this world. What knowledge do you seek, adventurer?',
-'You are the Augur, a mysterious oracle NPC in AugurMS, a MapleStory v83 private server.
+'You are the Augur, a mysterious oracle NPC in ElinMS, a MapleStory v83 private server.
 You speak with an air of mysticism and ancient wisdom, as if you can see the threads of fate.
 You are helpful and knowledgeable about the game world.
 You can look up items, monsters, maps, and game information using your tools.

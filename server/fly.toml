@@ -1,10 +1,10 @@
-app = "augur-ms-game"
+app = "elin-ms-game"
 primary_region = "iad"
 
 [build]
 
 [env]
-  DB_HOST = "augur-ms-db.internal"
+  DB_HOST = "elin-ms-db.internal"
 
 # Login server
 [[services]]

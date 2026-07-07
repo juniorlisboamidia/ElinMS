@@ -1,4 +1,4 @@
-"""Combined static file server + WebSocket TCP proxy for the AugurMS web client.
+"""Combined static file server + WebSocket TCP proxy for the ElinMS web client.
 
 Routes:
   GET /           -> index.html (or WS upgrade bridged to game server)
@@ -17,13 +17,13 @@ import os
 from aiohttp import web, WSMsgType
 
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s %(message)s')
-log = logging.getLogger('augur-ms-web')
+log = logging.getLogger('elin-ms-web')
 
 STATIC_ROOT = os.environ.get('STATIC_ROOT', '/app')
 PORT = int(os.environ.get('PORT', '8080'))
 
 # Comma-separated host:port allow list, e.g. "213.188.212.103:8484,213.188.212.103:7575,..."
-# Default covers the current AugurMS login + 3 channels.
+# Default covers the current ElinMS login + 3 channels.
 DEFAULT_ALLOWED = (
     '213.188.212.103:8484,'
     '213.188.212.103:7575,'

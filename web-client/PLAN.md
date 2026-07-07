@@ -1,15 +1,15 @@
 # Web client (browser WASM) — remaining work
 
 Context: `web-client/` hosts the browser-playable MapleStory WASM client. Users visit
-`https://play.augurms.com`, the page serves static HTML + WASM + a combined WebSocket
-TCP proxy (to the augur-ms-game Fly app at 213.188.212.103:8484). NX game assets stream
+`https://play.elinms.com`, the page serves static HTML + WASM + a combined WebSocket
+TCP proxy (to the elin-ms-game Fly app at 213.188.212.103:8484). NX game assets stream
 from Cloudflare R2 at `https://pub-34b8b332208f464a9e74fa14104be3e2.r2.dev/nx/` via
 HTTPS Range requests cached in the browser's IndexedDB.
 
 ## What's done
 
 - [x] All 16 NX files uploaded to R2 under `nx/` prefix (~4.2 GB, free tier).
-- [x] R2 bucket CORS configured for `http://localhost:8000`, `augurms.com`, `play.augurms.com`.
+- [x] R2 bucket CORS configured for `http://localhost:8000`, `elinms.com`, `play.elinms.com`.
 - [x] WASM client rewritten to fetch chunks via HTTPS Range when `NxBaseUrl` is set
   (`src/client/LazyFS/lazyfs.js`). WebSocket path preserved as fallback. Committed to
   `themrzmaster/maplestory-wasm@master` (SHA `cde7764`).
@@ -19,14 +19,14 @@ HTTPS Range requests cached in the browser's IndexedDB.
 - [x] Combined aiohttp static + WS TCP proxy (`web-client/server.py`). Target allow-list
   covers augur login + 3 channels. Single port (8080).
 - [x] First Fly deploy using artifact-copy approach. App running at
-  `https://augur-ms-web.fly.dev` (machine id `1851d7dc295d38`, iad, shared-cpu-1x@256MB).
+  `https://elin-ms-web.fly.dev` (machine id `1851d7dc295d38`, iad, shared-cpu-1x@256MB).
 - [x] Submodule `web-client/vendor/maplestory-wasm` pinned at `cde7764`.
 - [x] Multi-stage Dockerfile: emscripten/emsdk builds WASM from the submodule, then
   python:3.11-slim runtime copies the artifacts + `config.prod.json → config.json`.
 - [x] `deploy-web` job in `.github/workflows/deploy.yml` with `submodules: recursive`.
   Dispatch via `gh workflow run deploy.yml -f web=true`.
 
-- [x] Local Dockerfile build verified end-to-end (`docker build -t augur-ms-web:submodule .`
+- [x] Local Dockerfile build verified end-to-end (`docker build -t elin-ms-web:submodule .`
   → full emscripten compile ~26 s; runtime container serves `/healthz`, `/`,
   `/web/config.json`, and `/build/JourneyClient.{js,wasm}` with correct content types).
   Dropped the `apt-get install git` step — not needed (CMake doesn't invoke git, and
@@ -34,23 +34,23 @@ HTTPS Range requests cached in the browser's IndexedDB.
 
 ## What's left (in order)
 
-### 1. DNS + TLS for `play.augurms.com`
+### 1. DNS + TLS for `play.elinms.com`
 
 Nothing here requires my code — it's all user actions in Cloudflare + one flyctl call.
 
 1. Cloudflare DNS: add record
    - Type: CNAME
    - Name: `play`
-   - Target: `augur-ms-web.fly.dev`
+   - Target: `elin-ms-web.fly.dev`
    - Proxy: orange cloud ON (Cloudflare terminates TLS, passes to Fly; WebSockets
      work on Cloudflare free plan)
 2. Fly cert:
    ```
-   flyctl certs create play.augurms.com --app augur-ms-web
-   flyctl certs check play.augurms.com --app augur-ms-web
+   flyctl certs create play.elinms.com --app elin-ms-web
+   flyctl certs check play.elinms.com --app elin-ms-web
    ```
    Wait until "Certificate Status: Ready".
-3. Browse `https://play.augurms.com/`. Loading screen should appear → prefetch →
+3. Browse `https://play.elinms.com/`. Loading screen should appear → prefetch →
    login.
 
 ### 2. WZ → NX conversion workflow  *(task #6 in the task board)*
@@ -84,7 +84,7 @@ workflow:
 
 ```ts
 await fetch(
-  'https://api.github.com/repos/themrzmaster/augurms/dispatches',
+  'https://api.github.com/repos/juniorlisboamidia/ElinMS/dispatches',
   {
     method: 'POST',
     headers: {
@@ -123,6 +123,6 @@ conversion storms. Mirror the same dispatch in the GM tool
   match this format exactly.
 - **UI.nx is v154+**, unlike every other NX file (which is v83). Do NOT regenerate
   UI.nx from v83 UI.wz — the result has no login fields and the browser can't log in.
-- **Port 443 in WebSocket URL**: `wss://play.augurms.com:443/` works. The C++ URL
+- **Port 443 in WebSocket URL**: `wss://play.elinms.com:443/` works. The C++ URL
   builder always appends `:port`; 443 is harmless with `wss://`.
 - **Fly `--ha=false`** pins one machine. Remove if you want multi-region failover.

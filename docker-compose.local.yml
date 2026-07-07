@@ -51,7 +51,7 @@ services:
     environment:
       WATCHPACK_POLLING: "true"
       # Aponta o dashboard pro servidor de jogo LOCAL. Sem isto o default e o host
-      # interno do Fly.io (augur-ms-game.internal), inalcancavel no local — entao
+      # interno do Fly.io (elin-ms-game.internal), inalcancavel no local — entao
       # mudancas de rate/drop/announce e o check de status nao chegam no servidor.
       GAME_API_URL: "http://server:8585"
       GAME_SERVER_HOST: "server"

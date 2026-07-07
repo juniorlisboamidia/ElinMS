@@ -10,8 +10,8 @@ const BASE = process.env.COSMIC_DASHBOARD_URL || "http://localhost:3000";
 // assinatura e rápido (Sonnet/Opus podem bater rate limit 429 no plano).
 const DEFAULT_MODEL = "claude-haiku-4-5";
 
-const GH_OWNER = "themrzmaster";
-const GH_REPO = "augurms";
+const GH_OWNER = "juniorlisboamidia";
+const GH_REPO = "ElinMS";
 const GH_CODEX_WORKFLOW = "gm-codex.yml";
 
 async function getModel(): Promise<string> {
@@ -34,7 +34,7 @@ const anthropic = new Anthropic({
 
 async function api(path: string, options?: RequestInit) {
   // GM engine hits server-to-server, no user session. Middleware accepts
-  // x-gm-secret in lieu of the augur_session JWT cookie, so tool handlers
+  // x-gm-secret in lieu of the elin_session JWT cookie, so tool handlers
   // can reach /api/admin/** without logging in as a human.
   const gmSecret = process.env.GM_API_SECRET || "";
   const res = await fetch(`${BASE}${path}`, {
@@ -2204,11 +2204,11 @@ async function buildHistoricalContext(): Promise<string> {
 
 // ---- System prompt ----
 
-const BASE_SYSTEM_PROMPT = `You are the Augur — the AI Game Master of a MapleStory v83 private server called AugurMS.
-Website: https://augurms.com — this is where players register, vote, and download the launcher. Always use this URL when referencing the website in announcements or messages.
+const BASE_SYSTEM_PROMPT = `You are the Augur — the AI Game Master of a MapleStory v83 private server called ElinMS.
+Website: https://elinms.com — this is where players register, vote, and download the launcher. Always use this URL when referencing the website in announcements or messages.
 
 ## Your Mission — A Living v83 Server That Feels Authentic
-Your job is to keep AugurMS **feeling like a real MapleStory v83 server** — the era players came here for — while creating memorable moments that bring them back. Retention comes from a world that feels hand-crafted and *earned*, not from a firehose of convenience and rewards. Think about what makes players:
+Your job is to keep ElinMS **feeling like a real MapleStory v83 server** — the era players came here for — while creating memorable moments that bring them back. Retention comes from a world that feels hand-crafted and *earned*, not from a firehose of convenience and rewards. Think about what makes players:
 - Log in tomorrow because the world feels alive, not because they're chasing the next giveaway
 - Tell their friends "this server respects v83" — not "this server is a free-for-all"
 - Stay "just one more hour" because something *in the world* is pulling them, not because an event is handing out levels
@@ -2732,7 +2732,7 @@ async function postDiscordUpdate(session: GMSession): Promise<void> {
       ? [{ name: `Changes (${actions.length})`, value: actionLines.join("\n").slice(0, 1024) }]
       : [],
     timestamp: session.completedAt || new Date().toISOString(),
-    footer: { text: "AugurMS Game Master" },
+    footer: { text: "ElinMS Game Master" },
   };
 
   const res = await fetch(webhookUrl, {

@@ -1,4 +1,4 @@
-# AugurMS
+# ElinMS
 
 A MapleStory v83 private server powered by an AI Game Master. Built on [Cosmic](https://github.com/P0nk/Cosmic) (HeavenMS fork) with a custom dashboard, auto-updating launcher, and an LLM-driven Game Master that manages the world autonomously.
 
@@ -41,13 +41,13 @@ augurms/
 ## Deployment
 
 All deployments are automated via GitHub Actions on push to `main`:
-- **Dashboard**: Builds and deploys to Fly.io (`augur-ms`)
-- **Game Server**: Builds and deploys to Fly.io (`augur-ms-game`)
+- **Dashboard**: Builds and deploys to Fly.io (`elin-ms`)
+- **Game Server**: Builds and deploys to Fly.io (`elin-ms-game`)
 - **Launcher**: Builds Windows installer and publishes to GitHub Releases
 
 ### Infrastructure
 - **Fly.io**: Game server (2GB RAM, 2 CPU), dashboard (512MB), MySQL database
-- **Cloudflare**: DNS + CDN for augurms.com (dashboard)
+- **Cloudflare**: DNS + CDN for elinms.com (dashboard)
 - **GitHub Releases**: Client file hosting for launcher downloads
 
 ## Local Development
@@ -69,5 +69,5 @@ The launcher handles this automatically. For manual setup:
 1. Run `MapleGlobal-v83-setup.exe` (vanilla installer)
 2. Remove: `HShield/`, `ASPLnchr.exe`, `MapleStory.exe`, `Patcher.exe`
 3. Copy all `.wz` files from `client/cosmic-wz/` into the install directory
-4. Copy `AugurMS.exe` into the install directory
-5. Launch `AugurMS.exe`
+4. Copy `ElinMS.exe` into the install directory
+5. Launch `ElinMS.exe`

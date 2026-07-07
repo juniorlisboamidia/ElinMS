@@ -1,4 +1,4 @@
-app = "augur-ms"
+app = "elin-ms"
 primary_region = "iad"
 
 [build]

@@ -1,4 +1,4 @@
--- AugurMS GM Tables
+-- ElinMS GM Tables
 -- These tables are used by the dashboard's Game Master AI system.
 -- They are NOT managed by Cosmic's Liquibase — run manually or via dashboard startup.
 

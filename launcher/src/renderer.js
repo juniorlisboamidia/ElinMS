@@ -1,4 +1,4 @@
-// ── AugurMS Launcher ──
+// ── ElinMS Launcher ──
 
 const $ = (id) => document.getElementById(id);
 
@@ -19,8 +19,8 @@ function setupControls() {
   $("btn-browse").onclick = browseFolder;
   $("btn-play").onclick = handlePlay;
 
-  $("link-register").onclick = () => window.augur.openExternal("https://augurms.com/register");
-  $("link-website").onclick = () => window.augur.openExternal("https://augurms.com");
+  $("link-register").onclick = () => window.augur.openExternal("https://elinms.com/register");
+  $("link-website").onclick = () => window.augur.openExternal("https://elinms.com");
   $("link-discord").onclick = () => window.augur.openExternal("https://discord.gg/pApUkuZjNa");
 
   // HD Mode toggle
@@ -98,7 +98,7 @@ async function checkServerStatus() {
 
   // Also fetch rates from config (raw YAML structure: worlds[0].exp_rate etc.)
   try {
-    const res = await fetch("https://augurms.com/api/config");
+    const res = await fetch("https://elinms.com/api/config");
     if (res.ok) {
       const data = await res.json();
       const world = data?.worlds?.[0];

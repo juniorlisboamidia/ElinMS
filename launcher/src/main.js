@@ -5,7 +5,7 @@ const crypto = require("crypto");
 const https = require("https");
 const http = require("http");
 
-const API_BASE = "https://augurms.com";
+const API_BASE = "https://elinms.com";
 const MANIFEST_URL = `${API_BASE}/api/launcher/manifest`;
 const NEWS_URL = `${API_BASE}/api/launcher/news`;
 const STATUS_URL = `${API_BASE}/api/server`;
@@ -28,10 +28,10 @@ function log(msg) {
 
 // Default game paths to check
 const DEFAULT_PATHS = [
-  "C:\\AugurMS",
+  "C:\\ElinMS",
   "C:\\Nexon\\MapleStory",
   "C:\\MapleStory",
-  path.join(app.getPath("home"), "AugurMS"),
+  path.join(app.getPath("home"), "ElinMS"),
 ];
 
 function createWindow() {
@@ -81,7 +81,7 @@ ipcMain.handle("game:findPath", () => {
 
   // Check default paths
   for (const p of DEFAULT_PATHS) {
-    const exePath = path.join(p, "AugurMS.exe");
+    const exePath = path.join(p, "ElinMS.exe");
     if (fs.existsSync(exePath)) {
       gamePath = p;
       saveConfig({ gamePath });
@@ -102,7 +102,7 @@ ipcMain.handle("game:selectFolder", async () => {
   const { dialog } = require("electron");
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ["openDirectory"],
-    title: "Select AugurMS Installation Folder",
+    title: "Select ElinMS Installation Folder",
   });
   if (result.canceled || !result.filePaths.length) return null;
   const selected = result.filePaths[0];
@@ -113,9 +113,9 @@ ipcMain.handle("game:selectFolder", async () => {
 
 ipcMain.handle("game:launch", () => {
   if (!gamePath) return { success: false, error: "Game path not set" };
-  const exePath = path.join(gamePath, "AugurMS.exe");
+  const exePath = path.join(gamePath, "ElinMS.exe");
   if (!fs.existsSync(exePath))
-    return { success: false, error: "AugurMS.exe not found" };
+    return { success: false, error: "ElinMS.exe not found" };
 
   // Safety check: remove Ezorsia dinput8.dll if HD mode is off
   // Windows auto-loads any dinput8.dll in the exe directory, causing crashes
@@ -137,7 +137,7 @@ ipcMain.handle("game:launch", () => {
     if (staleFiles.includes("dinput8.dll")) {
       return {
         success: false,
-        error: "Cannot remove dinput8.dll from game folder (file may be locked). Close any running AugurMS processes and try again, or manually delete it from: " + gamePath,
+        error: "Cannot remove dinput8.dll from game folder (file may be locked). Close any running ElinMS processes and try again, or manually delete it from: " + gamePath,
       };
     }
   }
@@ -198,7 +198,7 @@ ipcMain.handle("settings:setHD", (_, enabled) => {
     if (failed.length > 0) {
       return {
         success: true,
-        warning: `Could not remove: ${failed.join(", ")}. Close AugurMS and try toggling HD off again, or manually delete from game folder.`,
+        warning: `Could not remove: ${failed.join(", ")}. Close ElinMS and try toggling HD off again, or manually delete from game folder.`,
       };
     }
   }
@@ -344,7 +344,7 @@ ipcMain.handle("launcher:downloadUpdates", async (_, updates) => {
   } catch (err) {
     return {
       success: false,
-      error: `Cannot write to game folder: ${gamePath}\n\n${err.message}\n\nTry choosing a different folder (e.g. C:\\AugurMS), or run the launcher as Administrator.`,
+      error: `Cannot write to game folder: ${gamePath}\n\n${err.message}\n\nTry choosing a different folder (e.g. C:\\ElinMS), or run the launcher as Administrator.`,
     };
   }
 
@@ -400,9 +400,9 @@ ipcMain.handle("launcher:downloadUpdates", async (_, updates) => {
           let hint = "";
           const msg = err.message || "";
           if (msg.includes("EPROTO") || msg.includes("WRONG_VERSION_NUMBER") || msg.includes("SSL")) {
-            hint = "\n\nThis looks like a network/SSL issue. A firewall, proxy, or antivirus may be blocking the download. Try:\n• Disable VPN or proxy\n• Temporarily disable antivirus\n• Download files manually from: https://github.com/themrzmaster/augurms/releases/tag/client-v1.0.1";
+            hint = "\n\nThis looks like a network/SSL issue. A firewall, proxy, or antivirus may be blocking the download. Try:\n• Disable VPN or proxy\n• Temporarily disable antivirus\n• Download files manually from: https://github.com/juniorlisboamidia/ElinMS/releases/tag/client-v1.0.1";
           } else if (msg.includes("timeout") || msg.includes("ETIMEDOUT") || msg.includes("ECONNRESET")) {
-            hint = "\n\nConnection issue. Check your internet and try again. You can also download files manually from: https://github.com/themrzmaster/augurms/releases/tag/client-v1.0.1";
+            hint = "\n\nConnection issue. Check your internet and try again. You can also download files manually from: https://github.com/juniorlisboamidia/ElinMS/releases/tag/client-v1.0.1";
           }
           return { success: false, error: `Failed to download ${file.name}: ${msg}${hint}` };
         }

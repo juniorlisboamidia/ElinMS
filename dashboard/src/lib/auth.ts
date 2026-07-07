@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { execute, query } from "@/lib/db";
 
-const COOKIE_NAME = "augur_session";
+const COOKIE_NAME = "elin_session";
 const JWT_EXPIRY = "7d";
 
 export interface AdminUserRow {

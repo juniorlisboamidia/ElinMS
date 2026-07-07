@@ -1,4 +1,4 @@
-app = 'augur-ms-web'
+app = 'elin-ms-web'
 primary_region = 'iad'
 
 [build]

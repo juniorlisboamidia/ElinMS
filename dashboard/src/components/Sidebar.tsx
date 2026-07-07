@@ -77,9 +77,9 @@ export default function Sidebar() {
     <aside className="fixed top-0 left-0 z-40 flex h-screen w-60 flex-col border-r border-border bg-bg-secondary/80 backdrop-blur-xl">
       {/* Logo */}
       <div className="flex items-center gap-2 px-4 py-4">
-        <Image src="/logo.png" alt="AugurMS" width={36} height={36} className="drop-shadow-[0_0_8px_rgba(245,197,66,0.3)]" />
+        <Image src="/logo.png" alt="ElinMS" width={36} height={36} className="drop-shadow-[0_0_8px_rgba(245,197,66,0.3)]" />
         <span className="text-lg font-bold tracking-wide text-text-primary">
-          AugurMS
+          ElinMS
         </span>
       </div>
 

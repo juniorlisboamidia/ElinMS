@@ -16,7 +16,7 @@ function getReadPath() {
 
 // Files the launcher tracks for updates
 const TRACKED_FILES = [
-  "AugurMS.exe",
+  "ElinMS.exe",
   "Character.wz",
   "Etc.wz",
   "Item.wz",

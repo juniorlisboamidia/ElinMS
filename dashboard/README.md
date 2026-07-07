@@ -1,16 +1,16 @@
-# AugurMS
+# ElinMS
 
 MapleStory v83 private server with an **AI Game Master** that autonomously tunes the game world in real time.
 
-**Live:** [augur-ms.fly.dev](https://augur-ms.fly.dev)
+**Live:** [elin-ms.fly.dev](https://elin-ms.fly.dev)
 
 ![Next.js 15](https://img.shields.io/badge/Next.js-15-black) ![React 19](https://img.shields.io/badge/React-19-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178c6) ![Claude Agent SDK](https://img.shields.io/badge/Claude-Agent%20SDK-orange) ![Fly.io](https://img.shields.io/badge/Fly.io-deployed-purple)
 
 ---
 
-## What is AugurMS?
+## What is ElinMS?
 
-An augur was a Roman oracle who read signs to guide decisions. **AugurMS** is a MapleStory v83 server where an AI Game Master reads the pulse of the game — player activity, economy health, progression curves — and tunes the world accordingly.
+An augur was a Roman oracle who read signs to guide decisions. **ElinMS** is a MapleStory v83 server where an AI Game Master reads the pulse of the game — player activity, economy health, progression curves — and tunes the world accordingly.
 
 - Classic v83 experience (4th job, PQs, bossing)
 - AI-driven dynamic events, rate adjustments, and economy balancing
@@ -34,7 +34,7 @@ Public (Fly.io)                    Admin (Fly.io, auth-gated)
                         │
               ┌─────────┴─────────┐
               │  MySQL (Fly.io)   │
-              │  augur-ms-db      │
+              │  elin-ms-db      │
               │  70+ tables       │
               └───────────────────┘
 ```

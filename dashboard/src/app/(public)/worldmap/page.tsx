@@ -1212,9 +1212,9 @@ export default function WorldMapPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
-            <Image src="/logo.png" alt="AugurMS" width={28} height={28} className="drop-shadow-[0_0_8px_rgba(245,197,66,0.3)]" />
+            <Image src="/logo.png" alt="ElinMS" width={28} height={28} className="drop-shadow-[0_0_8px_rgba(245,197,66,0.3)]" />
             <span className="text-sm font-bold tracking-wide text-text-primary">
-              AugurMS
+              ElinMS
             </span>
           </Link>
           <div className="h-4 w-px bg-border" />
