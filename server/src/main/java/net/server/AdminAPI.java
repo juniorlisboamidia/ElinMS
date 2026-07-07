@@ -8,6 +8,7 @@ import client.inventory.Item;
 import client.inventory.manipulator.InventoryManipulator;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
+import constants.id.MapId;
 import constants.inventory.ItemConstants;
 import net.server.world.World;
 import org.slf4j.Logger;
@@ -56,6 +57,9 @@ public class AdminAPI {
             server.createContext("/buff", this::handleBuff);
             server.createContext("/kick", this::handleKick);
             server.createContext("/msgplayer", this::handleMsgPlayer);
+            server.createContext("/givefame", this::handleGiveFame);
+            server.createContext("/jail", this::handleJail);
+            server.createContext("/mutemap", this::handleMuteMap);
             server.setExecutor(null);
             server.start();
             log.info("Admin API started on port {}", PORT);
@@ -719,6 +723,142 @@ public class AdminAPI {
 
         log.info("Admin API: Messaged {} — {}", target.getName(), message);
         respond(ex, 200, String.format("{\"success\":true,\"character\":\"%s\"}", target.getName().replace("\"", "\\\"")));
+    }
+
+    private void handleGiveFame(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer amount = extractInt(body, "amount");
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+
+        if (amount == null) {
+            respond(ex, 400, "{\"error\":\"amount is required\"}");
+            return;
+        }
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        final Character fameTarget = target;
+        final int fameDelta = amount;
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                fameTarget.gainFame(fameDelta);
+            } catch (Exception e) {
+                log.warn("Admin API: give fame failed for {}", fameTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Gave {} fame to {}", amount, target.getName());
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"character\":\"%s\",\"amount\":%d}",
+            target.getName().replace("\"", "\\\""), amount
+        ));
+    }
+
+    private void handleJail(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer minutes = extractInt(body, "minutes");
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+
+        if (minutes == null || minutes < 1) minutes = 5;
+        minutes = Math.min(minutes, 1440);
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        final Character jailTarget = target;
+        final int jailMinutes = minutes;
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                jailTarget.addJailExpirationTime(jailMinutes * 60000L);
+                if (jailTarget.getMapId() != MapId.JAIL) {
+                    MapleMap jailMap = jailTarget.getClient().getChannelServer().getMapFactory().getMap(MapId.JAIL);
+                    jailTarget.saveLocationOnWarp();
+                    jailTarget.changeMap(jailMap, jailMap.getPortal(0));
+                }
+            } catch (Exception e) {
+                log.warn("Admin API: jail failed for {}", jailTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Jailed {} for {} min", target.getName(), minutes);
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"character\":\"%s\",\"minutes\":%d}",
+            target.getName().replace("\"", "\\\""), minutes
+        ));
+    }
+
+    private void handleMuteMap(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer mutedInt = extractInt(body, "muted");
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        final boolean isMuted = (mutedInt == null || mutedInt != 0); // default true
+        final Character muteTarget = target;
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                muteTarget.getMap().setMuted(isMuted);
+            } catch (Exception e) {
+                log.warn("Admin API: mute map failed for {}", muteTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: {} the map of {}", isMuted ? "Muted" : "Unmuted", target.getName());
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"character\":\"%s\",\"muted\":%b}",
+            target.getName().replace("\"", "\\\""), isMuted
+        ));
     }
 
     private void loadRatesFromDb() {

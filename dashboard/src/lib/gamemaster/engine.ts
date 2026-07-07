@@ -70,6 +70,7 @@ const WRITE_TOOLS = new Set([
   "warp_character", "give_item_live",
   "spawn_mob", "heal_player", "give_meso",
   "buff_player", "kick_player", "message_player",
+  "give_fame", "jail_player", "mute_map",
   "update_mob", "batch_update_mobs",
   "add_mob_drop", "remove_mob_drop", "batch_update_drops",
   "add_map_spawn", "remove_map_spawn",
@@ -216,6 +217,15 @@ export const toolHandlers: Record<string, (args: any) => Promise<string>> = {
 
   message_player: async ({ characterName, characterId, message }) =>
     JSON.stringify(await api("/api/gm/msgplayer", { method: "POST", body: JSON.stringify({ characterName, characterId, message }) })),
+
+  give_fame: async ({ characterName, characterId, amount }) =>
+    JSON.stringify(await api("/api/gm/givefame", { method: "POST", body: JSON.stringify({ characterName, characterId, amount }) })),
+
+  jail_player: async ({ characterName, characterId, minutes }) =>
+    JSON.stringify(await api("/api/gm/jail", { method: "POST", body: JSON.stringify({ characterName, characterId, minutes }) })),
+
+  mute_map: async ({ characterName, characterId, muted }) =>
+    JSON.stringify(await api("/api/gm/mutemap", { method: "POST", body: JSON.stringify({ characterName, characterId, muted }) })),
 
   grant_nx: async ({ characterId, accountId, amount, type }) =>
     JSON.stringify(await api("/api/gm/nx", { method: "POST", body: JSON.stringify({ characterId, accountId, amount, type: type || "nxCredit" }) })),
@@ -933,6 +943,55 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
           message: { type: "string", description: "The message text to show the player" },
         },
         required: ["message"],
+      },
+    },
+  },
+
+  {
+    type: "function",
+    function: {
+      name: "give_fame",
+      description: "Give fame to an ONLINE player LIVE (no relog) — updates immediately in-game. Use a negative amount to remove fame. Fame is clamped to the game's valid range. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+          amount: { type: "number", description: "Fame to add (negative to remove)" },
+        },
+        required: ["amount"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "jail_player",
+      description: "Send an ONLINE player to jail for N minutes, LIVE (moderation) — teleports them to the jail map and blocks them from leaving until the time expires. Calling again extends the time. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player to jail" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+          minutes: { type: "number", description: "How long to jail them (default 5, max 1440)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "mute_map",
+      description: "Mute or un-mute the MAP an ONLINE player is currently on, LIVE — silences chat for EVERYONE on that map (the engine has no single-player mute). Handy to calm a spammy town/FM room, or to silence a jailed player by muting the jail map. Pass muted=false to un-mute. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of an ONLINE player on the target map" },
+          characterId: { type: "number", description: "DB ID of an ONLINE player on the target map (alternative to characterName)" },
+          muted: { type: "boolean", description: "true to mute the map (default), false to un-mute" },
+        },
+        required: [],
       },
     },
   },
