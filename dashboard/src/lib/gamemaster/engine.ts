@@ -1,10 +1,14 @@
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { query as dbQuery, execute } from "@/lib/db";
 import { restartGameServer } from "@/lib/fly-restart";
 import type { GMSession, GMLogEntry } from "./types";
 
 const BASE = process.env.COSMIC_DASHBOARD_URL || "http://localhost:3000";
-const DEFAULT_MODEL = "moonshotai/kimi-k2.5";
+// IA do Game Master roda na assinatura Claude (Pro/Max) via Anthropic Messages API.
+// O modelo precisa ser um "claude-*". Haiku 4.5 é o padrão: leve na cota da
+// assinatura e rápido (Sonnet/Opus podem bater rate limit 429 no plano).
+const DEFAULT_MODEL = "claude-haiku-4-5";
 
 const GH_OWNER = "themrzmaster";
 const GH_REPO = "augurms";
@@ -13,15 +17,19 @@ const GH_CODEX_WORKFLOW = "gm-codex.yml";
 async function getModel(): Promise<string> {
   try {
     const [row] = await dbQuery("SELECT model FROM gm_schedule WHERE id = 1");
-    return (row as any)?.model || DEFAULT_MODEL;
+    const m = (row as any)?.model as string | undefined;
+    // Aceita apenas modelos Claude; ignora modelos antigos do OpenRouter (kimi, etc.)
+    return m && m.startsWith("claude-") ? m : DEFAULT_MODEL;
   } catch {
     return DEFAULT_MODEL;
   }
 }
 
-const openrouter = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY || "",
+// Autentica com a assinatura Claude via token OAuth do Claude Code
+// (gerado por `claude setup-token`). Sem API key paga, sem OpenRouter.
+const anthropic = new Anthropic({
+  authToken: process.env.CLAUDE_CODE_OAUTH_TOKEN || process.env.ANTHROPIC_AUTH_TOKEN || "",
+  defaultHeaders: { "anthropic-beta": "oauth-2025-04-20" },
 });
 
 async function api(path: string, options?: RequestInit) {
@@ -2779,10 +2787,19 @@ export async function runGameMaster(
 
   await persistSessionStart(session, userPrompt, systemPrompt);
 
-  const messages: OpenAI.ChatCompletionMessageParam[] = [
-    { role: "system", content: systemPrompt },
+  const messages: Anthropic.MessageParam[] = [
     { role: "user", content: userPrompt },
   ];
+
+  // Tools no formato Anthropic, convertidas das definições OpenAI em runtime
+  const anthropicTools: Anthropic.Tool[] = toolSchemas.map((t) => {
+    const fn = (t as any).function;
+    return {
+      name: fn.name,
+      description: fn.description,
+      input_schema: fn.parameters as Anthropic.Tool.InputSchema,
+    };
+  });
 
   let lastTextBeforeToolCall = "";
   let needsRestart = false;
@@ -2792,54 +2809,46 @@ export async function runGameMaster(
 
   try {
     for (let turn = 0; turn < MAX_TURNS; turn++) {
-      const response = await openrouter.chat.completions.create({
+      const response = await anthropic.messages.create({
         model,
-        messages,
-        tools: toolSchemas,
-        temperature: 0.7,
         max_tokens: 16384,
+        system: systemPrompt,
+        messages,
+        tools: anthropicTools,
       });
 
-      const choice = response.choices[0];
-      if (!choice) break;
-
-      const msg = choice.message;
-
-      // Emit text content
-      if (msg.content) {
-        lastTextBeforeToolCall = msg.content;
-        addLog({ type: "text", text: msg.content });
+      // Emit text content blocks
+      const textParts: string[] = [];
+      for (const block of response.content) {
+        if (block.type === "text") {
+          textParts.push(block.text);
+          lastTextBeforeToolCall = block.text;
+          addLog({ type: "text", text: block.text });
+        }
       }
 
+      // Preserve the assistant turn (full content, incl. tool_use blocks) in history
+      messages.push({ role: "assistant", content: response.content });
+
+      const toolUseBlocks = response.content.filter(
+        (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+      );
+
       // No tool calls → done
-      if (!msg.tool_calls || msg.tool_calls.length === 0) {
-        // Add assistant message to history
-        messages.push({ role: "assistant", content: msg.content || "" });
-        session.summary = msg.content || undefined;
+      if (response.stop_reason !== "tool_use" || toolUseBlocks.length === 0) {
+        session.summary = textParts.join("\n").trim() || undefined;
         break;
       }
 
-      // Add assistant message with tool calls to history
-      messages.push({
-        role: "assistant",
-        content: msg.content || null,
-        tool_calls: msg.tool_calls,
-      });
-
-      // Execute each tool call
-      for (const tc of msg.tool_calls) {
-        const fn = (tc as any).function as { name: string; arguments: string };
-        const toolName = fn.name;
-        let args: any;
-        try {
-          args = JSON.parse(fn.arguments || "{}");
-        } catch {
-          args = {};
-        }
+      // Execute each tool call, collecting results for a single user turn
+      const toolResults: Anthropic.ToolResultBlockParam[] = [];
+      for (const tu of toolUseBlocks) {
+        const toolName = tu.name;
+        const args: any = (tu.input as any) ?? {};
 
         addLog({
           type: "tool_call",
-          tool: { id: tc.id, name: toolName, input: args },
+          tool: { id: tu.id, name: toolName, input: args },
         });
 
         // Per-session cap: at most one delegate_code_change per GM session
@@ -2847,7 +2856,7 @@ export async function runGameMaster(
         if (toolName === "delegate_code_change") {
           const priorDelegations = session.log.filter(
             (e): e is Extract<GMLogEntry, { type: "tool_call" }> =>
-              e.type === "tool_call" && e.tool.name === "delegate_code_change" && e.tool.id !== tc.id
+              e.type === "tool_call" && e.tool.name === "delegate_code_change" && e.tool.id !== tu.id
           ).length;
           if (priorDelegations >= 1) {
             preempted = JSON.stringify({
@@ -2891,10 +2900,10 @@ export async function runGameMaster(
         // Update the tool_call log entry with the result
         const logEntry = session.log.findLast(
           (e): e is Extract<GMLogEntry, { type: "tool_call" }> =>
-            e.type === "tool_call" && e.tool.id === tc.id
+            e.type === "tool_call" && e.tool.id === tu.id
         );
         if (logEntry) {
-          logEntry.result = { toolCallId: tc.id, name: toolName, result: parsed };
+          logEntry.result = { toolCallId: tu.id, name: toolName, result: parsed };
           onUpdate(logEntry);
         }
 
@@ -2903,16 +2912,16 @@ export async function runGameMaster(
           await persistAction(session.id, toolName, args, parsed, lastTextBeforeToolCall || undefined);
         }
 
-        // Add tool result to message history
-        messages.push({
-          role: "tool",
-          tool_call_id: tc.id,
+        // Collect tool result for the next user turn
+        toolResults.push({
+          type: "tool_result",
+          tool_use_id: tu.id,
           content: resultStr,
         });
       }
 
-      // If the model said stop, we're done
-      if (choice.finish_reason === "stop") break;
+      // Send all tool results back as a single user turn
+      messages.push({ role: "user", content: toolResults });
     }
 
     session.status = "complete";

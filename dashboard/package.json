@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.106.0",
     "@codemirror/lang-javascript": "^6.2.3",
     "@tybys/wz": "^1.7.1",
     "@uiw/react-codemirror": "^4.23.10",
