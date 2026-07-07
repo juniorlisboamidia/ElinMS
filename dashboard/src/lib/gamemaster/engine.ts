@@ -57,7 +57,7 @@ function inferCategory(toolName: string): "rates" | "mobs" | "drops" | "spawns" 
   if (toolName.includes("mob") || toolName.includes("batch_update_mobs")) return "mobs";
   if (toolName.includes("reactor")) return "reactors";
   if (toolName.includes("drop")) return "drops";
-  if (toolName.includes("spawn") || toolName.includes("map")) return "spawns";
+  if (toolName.includes("spawn") || toolName.includes("map") || toolName.includes("warp")) return "spawns";
   if (toolName.includes("shop")) return "shops";
   if (toolName.includes("npc")) return "npcs";
   if (toolName.includes("event") || toolName.includes("treasure")) return "events";
@@ -67,6 +67,7 @@ function inferCategory(toolName: string): "rates" | "mobs" | "drops" | "spawns" 
 
 const WRITE_TOOLS = new Set([
   "update_character", "give_item_to_character", "grant_nx",
+  "warp_character", "give_item_live",
   "update_mob", "batch_update_mobs",
   "add_mob_drop", "remove_mob_drop", "batch_update_drops",
   "add_map_spawn", "remove_map_spawn",
@@ -189,6 +190,12 @@ export const toolHandlers: Record<string, (args: any) => Promise<string>> = {
 
   give_item_to_character: async ({ characterId, itemId, quantity }) =>
     JSON.stringify(await api(`/api/characters/${characterId}/inventory`, { method: "POST", body: JSON.stringify({ itemId, quantity: quantity || 1 }) })),
+
+  warp_character: async ({ characterName, characterId, mapId }) =>
+    JSON.stringify(await api("/api/gm/warp", { method: "POST", body: JSON.stringify({ characterName, characterId, mapId }) })),
+
+  give_item_live: async ({ characterName, characterId, itemId, quantity }) =>
+    JSON.stringify(await api("/api/gm/giveitem", { method: "POST", body: JSON.stringify({ characterName, characterId, itemId, quantity: quantity || 1 }) })),
 
   grant_nx: async ({ characterId, accountId, amount, type }) =>
     JSON.stringify(await api("/api/gm/nx", { method: "POST", body: JSON.stringify({ characterId, accountId, amount, type: type || "nxCredit" }) })),
@@ -722,7 +729,7 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "update_character",
-      description: "Update character stats (takes effect when player relogs). Allowed fields: level, str, dex, int, luk, maxhp, maxmp, meso, fame, ap, sp, job, map, exp, hp, mp, gm.",
+      description: "Update character stats in the DB. Takes effect on relog, and reliably ONLY for an OFFLINE player — changes to an ONLINE player get overwritten by the server's autosave. To move an ONLINE player to a map, use warp_character (live) instead of the map field here. Allowed fields: level, str, dex, int, luk, maxhp, maxmp, meso, fame, ap, sp, job, map, exp, hp, mp, gm.",
       parameters: {
         type: "object",
         properties: {
@@ -748,7 +755,7 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "give_item_to_character",
-      description: "Add an item to a character's inventory. The inventory type (equip/use/etc/cash) is determined automatically from the item ID range.",
+      description: "Add an item to a character's inventory in the DB. Reliable ONLY if the character is OFFLINE — for an ONLINE player the insert is wiped by inventory autosave; use give_item_live (into inventory) or spawn_drop (on the ground) instead. The inventory type (equip/use/etc/cash) is determined automatically from the item ID range.",
       parameters: {
         type: "object",
         properties: {
@@ -775,6 +782,40 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
           type: { type: "string", enum: ["nxCredit", "maplePoint", "nxPrepaid"], description: "Currency type (default: nxCredit). nxCredit = NX Cash, maplePoint = Maple Points, nxPrepaid = NX Prepaid" },
         },
         required: ["amount"],
+      },
+    },
+  },
+
+  {
+    type: "function",
+    function: {
+      name: "warp_character",
+      description: "Teleport an ONLINE player to a map INSTANTLY and LIVE (no relog needed). Acts on the running game — use this for online players instead of update_character with {map}, which only writes the DB and is overwritten while the player is online. Returns an error if the player is offline. Verify the mapId with search_maps first.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE character to warp" },
+          characterId: { type: "number", description: "DB ID of the ONLINE character (alternative to characterName)" },
+          mapId: { type: "number", description: "Destination map ID (verify with search_maps)" },
+        },
+        required: ["mapId"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "give_item_live",
+      description: "Add an item directly into an ONLINE player's inventory, LIVE (no relog needed). Acts on the running game — use for online players instead of give_item_to_character, which only writes the DB and is wiped when the online player's inventory autosaves. For equips it generates a proper equip. Returns an error if the player is offline or the item ID doesn't exist. To surprise a player with a ground drop instead, use spawn_drop.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE character" },
+          characterId: { type: "number", description: "DB ID of the ONLINE character (alternative to characterName)" },
+          itemId: { type: "number", description: "Item ID (use search_items/get_item to find and verify IDs)" },
+          quantity: { type: "number", description: "Stack quantity (default 1; equips are always 1)" },
+        },
+        required: ["itemId"],
       },
     },
   },

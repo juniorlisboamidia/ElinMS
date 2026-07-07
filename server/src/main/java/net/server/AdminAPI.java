@@ -3,6 +3,7 @@ package net.server;
 import client.Character;
 import client.inventory.InventoryType;
 import client.inventory.Item;
+import client.inventory.manipulator.InventoryManipulator;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpExchange;
 import constants.inventory.ItemConstants;
@@ -45,6 +46,8 @@ public class AdminAPI {
             server.createContext("/drop", this::handleDrop);
             server.createContext("/message", this::handleMessage);
             server.createContext("/npc", this::handleNpcSpawn);
+            server.createContext("/warp", this::handleWarp);
+            server.createContext("/giveitem", this::handleGiveItem);
             server.setExecutor(null);
             server.start();
             log.info("Admin API started on port {}", PORT);
@@ -301,6 +304,130 @@ public class AdminAPI {
         }
         spawnNpcOnMap(mapId, npcId, x, y, fh != null ? fh : 0);
         respond(ex, 200, String.format("{\"success\":true,\"npcId\":%d,\"mapId\":%d}", npcId, mapId));
+    }
+
+    private void handleWarp(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer mapId = extractInt(body, "mapId");
+        Integer worldId = extractInt(body, "world");
+
+        if (mapId == null) {
+            respond(ex, 400, "{\"error\":\"mapId is required\"}");
+            return;
+        }
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = null;
+        if (characterName != null) {
+            target = world.getPlayerStorage().getCharacterByName(characterName);
+        } else if (characterId != null) {
+            target = world.getPlayerStorage().getCharacterById(characterId);
+        }
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+        if (!target.isAlive()) {
+            respond(ex, 400, "{\"error\":\"Player is dead; cannot warp right now.\"}");
+            return;
+        }
+
+        MapleMap dest = target.getClient().getChannelServer().getMapFactory().getMap(mapId);
+        if (dest == null) {
+            respond(ex, 400, String.format("{\"error\":\"Map ID %d is invalid\"}", mapId));
+            return;
+        }
+
+        final Character warpTarget = target;
+        final MapleMap warpDest = dest;
+        // Run on the game thread (matches how !warp / handleDrop mutate live state)
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                warpTarget.saveLocationOnWarp();
+                warpTarget.changeMap(warpDest, warpDest.getRandomPlayerSpawnpoint());
+            } catch (Exception e) {
+                log.warn("Admin API: warp failed for {}", warpTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Warped {} to map {}", target.getName(), mapId);
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"character\":\"%s\",\"mapId\":%d}",
+            target.getName().replace("\"", "\\\""), mapId
+        ));
+    }
+
+    private void handleGiveItem(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer itemId = extractInt(body, "itemId");
+        Integer quantity = extractInt(body, "quantity");
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+
+        if (itemId == null) {
+            respond(ex, 400, "{\"error\":\"itemId is required\"}");
+            return;
+        }
+        if (quantity == null || quantity < 1) quantity = 1;
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = null;
+        if (characterName != null) {
+            target = world.getPlayerStorage().getCharacterByName(characterName);
+        } else if (characterId != null) {
+            target = world.getPlayerStorage().getCharacterById(characterId);
+        }
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        ItemInformationProvider ii = ItemInformationProvider.getInstance();
+        if (ii.getName(itemId) == null) {
+            respond(ex, 400, String.format("{\"error\":\"Item ID %d does not exist\"}", itemId));
+            return;
+        }
+
+        final Character giveTarget = target;
+        final int giveItemId = itemId;
+        final short giveQty = (short) Math.min(quantity, 999);
+        // addById handles inventory type + equip generation and pushes the update live
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                InventoryManipulator.addById(giveTarget.getClient(), giveItemId, giveQty, "", -1, (short) 0, -1L);
+            } catch (Exception e) {
+                log.warn("Admin API: giveitem failed for {}", giveTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Gave {}x item {} to {}", quantity, itemId, target.getName());
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"character\":\"%s\",\"itemId\":%d,\"quantity\":%d}",
+            target.getName().replace("\"", "\\\""), itemId, quantity
+        ));
     }
 
     private void loadRatesFromDb() {
