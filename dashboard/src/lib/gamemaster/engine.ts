@@ -69,6 +69,7 @@ const WRITE_TOOLS = new Set([
   "update_character", "give_item_to_character", "grant_nx",
   "warp_character", "give_item_live",
   "spawn_mob", "heal_player", "give_meso",
+  "buff_player", "kick_player", "message_player",
   "update_mob", "batch_update_mobs",
   "add_mob_drop", "remove_mob_drop", "batch_update_drops",
   "add_map_spawn", "remove_map_spawn",
@@ -206,6 +207,15 @@ export const toolHandlers: Record<string, (args: any) => Promise<string>> = {
 
   give_meso: async ({ characterName, characterId, amount }) =>
     JSON.stringify(await api("/api/gm/givemeso", { method: "POST", body: JSON.stringify({ characterName, characterId, amount }) })),
+
+  buff_player: async ({ characterName, characterId, skillId }) =>
+    JSON.stringify(await api("/api/gm/buff", { method: "POST", body: JSON.stringify({ characterName, characterId, skillId }) })),
+
+  kick_player: async ({ characterName, characterId }) =>
+    JSON.stringify(await api("/api/gm/kick", { method: "POST", body: JSON.stringify({ characterName, characterId }) })),
+
+  message_player: async ({ characterName, characterId, message }) =>
+    JSON.stringify(await api("/api/gm/msgplayer", { method: "POST", body: JSON.stringify({ characterName, characterId, message }) })),
 
   grant_nx: async ({ characterId, accountId, amount, type }) =>
     JSON.stringify(await api("/api/gm/nx", { method: "POST", body: JSON.stringify({ characterId, accountId, amount, type: type || "nxCredit" }) })),
@@ -875,6 +885,54 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
           amount: { type: "number", description: "Amount of meso to add (negative to remove)" },
         },
         required: ["amount"],
+      },
+    },
+  },
+
+  {
+    type: "function",
+    function: {
+      name: "buff_player",
+      description: "Apply a buff skill (at max level) to an ONLINE player, LIVE. Pass the skill ID of a buff. Common buffs: Hyper Body 1301007 (extra HP/MP), Holy Symbol 2311003 (EXP bonus), Haste 1101006 (speed/jump), Sharp Eyes 4111002, Meso Up 4211005. Returns an error if the player is offline or the skill ID is invalid.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+          skillId: { type: "number", description: "Skill ID of the buff to apply (e.g. 1301007 Hyper Body)" },
+        },
+        required: ["skillId"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "kick_player",
+      description: "Disconnect an ONLINE player from the server (force logout), LIVE. Use for moderation. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player to disconnect" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "message_player",
+      description: "Send a private on-screen message (light-blue GM text) to a single ONLINE player, LIVE — GM-to-player interaction. For a server-wide scrolling message use set_server_message instead. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+          message: { type: "string", description: "The message text to show the player" },
+        },
+        required: ["message"],
       },
     },
   },

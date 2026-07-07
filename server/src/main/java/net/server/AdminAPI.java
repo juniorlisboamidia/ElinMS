@@ -1,6 +1,8 @@
 package net.server;
 
 import client.Character;
+import client.Skill;
+import client.SkillFactory;
 import client.inventory.InventoryType;
 import client.inventory.Item;
 import client.inventory.manipulator.InventoryManipulator;
@@ -51,6 +53,9 @@ public class AdminAPI {
             server.createContext("/spawnmob", this::handleSpawnMob);
             server.createContext("/heal", this::handleHeal);
             server.createContext("/givemeso", this::handleGiveMeso);
+            server.createContext("/buff", this::handleBuff);
+            server.createContext("/kick", this::handleKick);
+            server.createContext("/msgplayer", this::handleMsgPlayer);
             server.setExecutor(null);
             server.start();
             log.info("Admin API started on port {}", PORT);
@@ -581,6 +586,139 @@ public class AdminAPI {
             "{\"success\":true,\"character\":\"%s\",\"amount\":%d}",
             target.getName().replace("\"", "\\\""), amount
         ));
+    }
+
+    private void handleBuff(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer skillId = extractInt(body, "skillId");
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+
+        if (skillId == null) {
+            respond(ex, 400, "{\"error\":\"skillId is required\"}");
+            return;
+        }
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+        Skill skill = SkillFactory.getSkill(skillId);
+        if (skill == null) {
+            respond(ex, 400, String.format("{\"error\":\"Skill ID %d does not exist\"}", skillId));
+            return;
+        }
+
+        final Character buffTarget = target;
+        final Skill buffSkill = skill;
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                buffSkill.getEffect(buffSkill.getMaxLevel()).applyTo(buffTarget);
+            } catch (Exception e) {
+                log.warn("Admin API: buff failed for {}", buffTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Buffed {} with skill {}", target.getName(), skillId);
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"character\":\"%s\",\"skillId\":%d}",
+            target.getName().replace("\"", "\\\""), skillId
+        ));
+    }
+
+    private void handleKick(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        final Character kickTarget = target;
+        final String kickName = target.getName();
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                kickTarget.getClient().disconnect(false, false);
+            } catch (Exception e) {
+                log.warn("Admin API: kick failed for {}", kickName, e);
+            }
+        }, 0);
+
+        log.info("Admin API: Kicked {}", kickName);
+        respond(ex, 200, String.format("{\"success\":true,\"character\":\"%s\"}", kickName.replace("\"", "\\\"")));
+    }
+
+    private void handleMsgPlayer(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        String message = extractString(body, "message");
+        Integer msgType = extractInt(body, "type");
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+
+        if (message == null || message.isEmpty()) {
+            respond(ex, 400, "{\"error\":\"message is required\"}");
+            return;
+        }
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        final Character msgTarget = target;
+        final String msgText = message;
+        final int msgKind = (msgType != null) ? msgType : 6; // 6 = light-blue GM text
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                msgTarget.dropMessage(msgKind, msgText);
+            } catch (Exception e) {
+                log.warn("Admin API: message failed for {}", msgTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Messaged {} — {}", target.getName(), message);
+        respond(ex, 200, String.format("{\"success\":true,\"character\":\"%s\"}", target.getName().replace("\"", "\\\"")));
     }
 
     private void loadRatesFromDb() {
