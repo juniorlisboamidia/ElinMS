@@ -71,6 +71,7 @@ const WRITE_TOOLS = new Set([
   "spawn_mob", "heal_player", "give_meso",
   "buff_player", "kick_player", "message_player",
   "give_fame", "jail_player", "mute_map",
+  "set_job", "set_level",
   "update_mob", "batch_update_mobs",
   "add_mob_drop", "remove_mob_drop", "batch_update_drops",
   "add_map_spawn", "remove_map_spawn",
@@ -226,6 +227,12 @@ export const toolHandlers: Record<string, (args: any) => Promise<string>> = {
 
   mute_map: async ({ characterName, characterId, muted }) =>
     JSON.stringify(await api("/api/gm/mutemap", { method: "POST", body: JSON.stringify({ characterName, characterId, muted }) })),
+
+  set_job: async ({ characterName, characterId, jobId }) =>
+    JSON.stringify(await api("/api/gm/setjob", { method: "POST", body: JSON.stringify({ characterName, characterId, jobId }) })),
+
+  set_level: async ({ characterName, characterId, level }) =>
+    JSON.stringify(await api("/api/gm/setlevel", { method: "POST", body: JSON.stringify({ characterName, characterId, level }) })),
 
   grant_nx: async ({ characterId, accountId, amount, type }) =>
     JSON.stringify(await api("/api/gm/nx", { method: "POST", body: JSON.stringify({ characterId, accountId, amount, type: type || "nxCredit" }) })),
@@ -759,7 +766,7 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "update_character",
-      description: "Update character stats in the DB. Takes effect on relog, and reliably ONLY for an OFFLINE player — changes to an ONLINE player get overwritten by the server's autosave. To move an ONLINE player to a map, use warp_character (live) instead of the map field here. Allowed fields: level, str, dex, int, luk, maxhp, maxmp, meso, fame, ap, sp, job, map, exp, hp, mp, gm.",
+      description: "Update character stats in the DB. Takes effect on relog, and reliably ONLY for an OFFLINE player — changes to an ONLINE player get overwritten by the server's autosave. For an ONLINE player use the live tools instead: warp_character (map), set_level (level, grants AP/SP), set_job (class). Allowed fields: level, str, dex, int, luk, maxhp, maxmp, meso, fame, ap, sp, job, map, exp, hp, mp, gm.",
       parameters: {
         type: "object",
         properties: {
@@ -992,6 +999,39 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
           muted: { type: "boolean", description: "true to mute the map (default), false to un-mute" },
         },
         required: [],
+      },
+    },
+  },
+
+  {
+    type: "function",
+    function: {
+      name: "set_job",
+      description: "Change an ONLINE player's job/class INSTANTLY and LIVE (no relog) via the game's real job-advancement path — grants the class's skills and updates everything immediately. Job IDs: 0 Beginner, 100 Warrior, 200 Magician, 300 Bowman, 400 Thief, 500 Pirate (2nd/3rd/4th jobs are higher, e.g. 110 Fighter, 210 Wizard(F/P)). Valid range 0-2199. Returns an error if the player is offline or the job ID is invalid.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+          jobId: { type: "number", description: "Target job ID (e.g. 100 Warrior, 200 Magician)" },
+        },
+        required: ["jobId"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "set_level",
+      description: "Raise an ONLINE player's level LIVE (no relog), leveling them up naturally so they receive the AP (status points), SP (skill points), and HP/MP for each level gained — exactly like earning the levels. Only RAISES the level (max 255); to set a lower level use update_character while the player is offline. Returns an error if the player is offline or the target is not above their current level.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+          level: { type: "number", description: "Target level (must be above current, max 255)" },
+        },
+        required: ["level"],
       },
     },
   },

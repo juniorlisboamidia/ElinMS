@@ -1,6 +1,7 @@
 package net.server;
 
 import client.Character;
+import client.Job;
 import client.Skill;
 import client.SkillFactory;
 import client.inventory.InventoryType;
@@ -60,6 +61,8 @@ public class AdminAPI {
             server.createContext("/givefame", this::handleGiveFame);
             server.createContext("/jail", this::handleJail);
             server.createContext("/mutemap", this::handleMuteMap);
+            server.createContext("/setjob", this::handleSetJob);
+            server.createContext("/setlevel", this::handleSetLevel);
             server.setExecutor(null);
             server.start();
             log.info("Admin API started on port {}", PORT);
@@ -858,6 +861,118 @@ public class AdminAPI {
         respond(ex, 200, String.format(
             "{\"success\":true,\"character\":\"%s\",\"muted\":%b}",
             target.getName().replace("\"", "\\\""), isMuted
+        ));
+    }
+
+    private void handleSetJob(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer jobId = extractInt(body, "jobId");
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+
+        if (jobId == null) {
+            respond(ex, 400, "{\"error\":\"jobId is required\"}");
+            return;
+        }
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        Job newJob = (jobId >= 0 && jobId < 2200) ? Job.getById(jobId) : null;
+        if (newJob == null) {
+            respond(ex, 400, String.format("{\"error\":\"Job ID %d is invalid (must be a real job, 0-2199)\"}", jobId));
+            return;
+        }
+
+        final Character jobTarget = target;
+        final Job job = newJob;
+        // changeJob does the full class change live (skills, SP, packets); equipChanged refreshes look
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                jobTarget.changeJob(job);
+                jobTarget.equipChanged();
+            } catch (Exception e) {
+                log.warn("Admin API: set job failed for {}", jobTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Changed job of {} to {}", target.getName(), jobId);
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"character\":\"%s\",\"jobId\":%d}",
+            target.getName().replace("\"", "\\\""), jobId
+        ));
+    }
+
+    private void handleSetLevel(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer level = extractInt(body, "level");
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+
+        if (level == null) {
+            respond(ex, 400, "{\"error\":\"level is required\"}");
+            return;
+        }
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        final int targetLevel = Math.min(level, 255);
+        final int currentLevel = target.getLevel();
+        if (targetLevel <= currentLevel) {
+            respond(ex, 400, String.format(
+                "{\"error\":\"set_level only raises level live (player is level %d). To set a lower level, use update_character while the player is offline.\"}",
+                currentLevel
+            ));
+            return;
+        }
+
+        final Character lvlTarget = target;
+        // Loop the natural level-up so AP (status points), SP (skill points), HP/MP and packets all apply
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                for (int i = currentLevel; i < targetLevel; i++) {
+                    lvlTarget.levelUp(false);
+                }
+            } catch (Exception e) {
+                log.warn("Admin API: set level failed for {}", lvlTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Leveled {} from {} to {}", target.getName(), currentLevel, targetLevel);
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"character\":\"%s\",\"fromLevel\":%d,\"toLevel\":%d}",
+            target.getName().replace("\"", "\\\""), currentLevel, targetLevel
         ));
     }
 
