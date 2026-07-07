@@ -48,6 +48,9 @@ public class AdminAPI {
             server.createContext("/npc", this::handleNpcSpawn);
             server.createContext("/warp", this::handleWarp);
             server.createContext("/giveitem", this::handleGiveItem);
+            server.createContext("/spawnmob", this::handleSpawnMob);
+            server.createContext("/heal", this::handleHeal);
+            server.createContext("/givemeso", this::handleGiveMeso);
             server.setExecutor(null);
             server.start();
             log.info("Admin API started on port {}", PORT);
@@ -427,6 +430,156 @@ public class AdminAPI {
         respond(ex, 200, String.format(
             "{\"success\":true,\"character\":\"%s\",\"itemId\":%d,\"quantity\":%d}",
             target.getName().replace("\"", "\\\""), itemId, quantity
+        ));
+    }
+
+    private Character findOnlinePlayer(World world, String characterName, Integer characterId) {
+        if (characterName != null) {
+            return world.getPlayerStorage().getCharacterByName(characterName);
+        } else if (characterId != null) {
+            return world.getPlayerStorage().getCharacterById(characterId);
+        }
+        return null;
+    }
+
+    private void handleSpawnMob(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer mobId = extractInt(body, "mobId");
+        Integer quantity = extractInt(body, "quantity");
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+
+        if (mobId == null) {
+            respond(ex, 400, "{\"error\":\"mobId is required\"}");
+            return;
+        }
+        if (quantity == null || quantity < 1) quantity = 1;
+        quantity = Math.min(quantity, 30);
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+        if (LifeFactory.getMonster(mobId) == null) {
+            respond(ex, 400, String.format("{\"error\":\"Mob ID %d does not exist\"}", mobId));
+            return;
+        }
+
+        final Character spawnTarget = target;
+        final int fMobId = mobId;
+        final int fQty = quantity;
+        // spawnMonsterOnGroundBelow mutates the map — run on the game thread. Live, no restart.
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                MapleMap map = spawnTarget.getMap();
+                Point pos = spawnTarget.getPosition();
+                for (int i = 0; i < fQty; i++) {
+                    map.spawnMonsterOnGroundBelow(LifeFactory.getMonster(fMobId), pos);
+                }
+            } catch (Exception e) {
+                log.warn("Admin API: spawn mob failed for {}", spawnTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Spawned {}x mob {} at {}", quantity, mobId, target.getName());
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"mobId\":%d,\"quantity\":%d,\"mapId\":%d}",
+            mobId, quantity, target.getMap().getId()
+        ));
+    }
+
+    private void handleHeal(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        final Character healTarget = target;
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                healTarget.healHpMp();
+            } catch (Exception e) {
+                log.warn("Admin API: heal failed for {}", healTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Healed {}", target.getName());
+        respond(ex, 200, String.format("{\"success\":true,\"character\":\"%s\"}", target.getName().replace("\"", "\\\"")));
+    }
+
+    private void handleGiveMeso(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer amount = extractInt(body, "amount");
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+
+        if (amount == null) {
+            respond(ex, 400, "{\"error\":\"amount is required\"}");
+            return;
+        }
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        final Character mesoTarget = target;
+        final int fAmount = amount;
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                mesoTarget.gainMeso(fAmount, true);
+            } catch (Exception e) {
+                log.warn("Admin API: give meso failed for {}", mesoTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Gave {} meso to {}", amount, target.getName());
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"character\":\"%s\",\"amount\":%d}",
+            target.getName().replace("\"", "\\\""), amount
         ));
     }
 

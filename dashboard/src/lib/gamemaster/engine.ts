@@ -68,6 +68,7 @@ function inferCategory(toolName: string): "rates" | "mobs" | "drops" | "spawns" 
 const WRITE_TOOLS = new Set([
   "update_character", "give_item_to_character", "grant_nx",
   "warp_character", "give_item_live",
+  "spawn_mob", "heal_player", "give_meso",
   "update_mob", "batch_update_mobs",
   "add_mob_drop", "remove_mob_drop", "batch_update_drops",
   "add_map_spawn", "remove_map_spawn",
@@ -196,6 +197,15 @@ export const toolHandlers: Record<string, (args: any) => Promise<string>> = {
 
   give_item_live: async ({ characterName, characterId, itemId, quantity }) =>
     JSON.stringify(await api("/api/gm/giveitem", { method: "POST", body: JSON.stringify({ characterName, characterId, itemId, quantity: quantity || 1 }) })),
+
+  spawn_mob: async ({ characterName, characterId, mobId, quantity }) =>
+    JSON.stringify(await api("/api/gm/spawnmob", { method: "POST", body: JSON.stringify({ characterName, characterId, mobId, quantity: quantity || 1 }) })),
+
+  heal_player: async ({ characterName, characterId }) =>
+    JSON.stringify(await api("/api/gm/heal", { method: "POST", body: JSON.stringify({ characterName, characterId }) })),
+
+  give_meso: async ({ characterName, characterId, amount }) =>
+    JSON.stringify(await api("/api/gm/givemeso", { method: "POST", body: JSON.stringify({ characterName, characterId, amount }) })),
 
   grant_nx: async ({ characterId, accountId, amount, type }) =>
     JSON.stringify(await api("/api/gm/nx", { method: "POST", body: JSON.stringify({ characterId, accountId, amount, type: type || "nxCredit" }) })),
@@ -816,6 +826,55 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
           quantity: { type: "number", description: "Stack quantity (default 1; equips are always 1)" },
         },
         required: ["itemId"],
+      },
+    },
+  },
+
+  {
+    type: "function",
+    function: {
+      name: "spawn_mob",
+      description: "Spawn one or more monsters LIVE at an ONLINE player's current location — they appear immediately, NO server restart (unlike add_map_spawn, which writes spawn points to the DB and needs a restart). Great for live boss invasions or surprise waves right where a player is. Returns an error if the player is offline or the mob ID doesn't exist. Verify the mob ID with search_mobs first. Quantity is capped at 30 per call.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player to spawn the mob(s) at" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+          mobId: { type: "number", description: "Monster ID (verify with search_mobs)" },
+          quantity: { type: "number", description: "How many to spawn (default 1, max 30)" },
+        },
+        required: ["mobId"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "heal_player",
+      description: "Fully restore an ONLINE player's HP and MP, LIVE (no relog). Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player to heal" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "give_meso",
+      description: "Give meso to an ONLINE player LIVE (no relog) — the balance updates immediately in-game. Use a negative amount to TAKE meso. Acts on the running game; for an offline player use update_character with the meso field instead. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+          amount: { type: "number", description: "Amount of meso to add (negative to remove)" },
+        },
+        required: ["amount"],
       },
     },
   },
