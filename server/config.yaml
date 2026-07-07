@@ -4,11 +4,11 @@ worlds:
     event_message: Welcome to AugurMS!
     why_am_i_recommended: Welcome to Scania!
     channels: 3
-    exp_rate: 1
-    meso_rate: 1
-    drop_rate: 1
+    exp_rate: 3
+    meso_rate: 2
+    drop_rate: 2
     boss_drop_rate: 1
-    quest_rate: 1
+    quest_rate: 3
     fishing_rate: 1
     travel_rate: 1
   - flag: 0
@@ -268,7 +268,7 @@ server:
   USE_ADD_RATES_BY_LEVEL: false
   USE_STACK_COUPON_RATES: false
   USE_PERFECT_PITCH: false
-  USE_QUEST_RATE: false
+  USE_QUEST_RATE: true
   QUEST_POINT_REPEATABLE_INTERVAL: 25
   QUEST_POINT_REQUIREMENT: 0
   QUEST_POINT_PER_QUEST_COMPLETE: 0
