@@ -1264,6 +1264,7 @@ public class ItemInformationProvider {
         equip.setMdef(getRandStat(equip.getMdef(), 10));
         equip.setHp(getRandStat(equip.getHp(), 10));
         equip.setMp(getRandStat(equip.getMp(), 10));
+        applyGodly(equip);
         return equip;
     }
 
@@ -1289,7 +1290,48 @@ public class ItemInformationProvider {
         equip.setMdef(getRandUpgradedStat(equip.getMdef(), 5));
         equip.setHp(getRandUpgradedStat(equip.getHp(), 5));
         equip.setMp(getRandUpgradedStat(equip.getMp(), 5));
+        applyGodly(equip);
         return equip;
+    }
+
+    // Godly Items (MapleRoyals-style): with a 1/CHANCE roll, add +0..MAX_BONUS to each nonzero
+    // stat ON TOP of the normal variance, so the equip can exceed its usual perfect range.
+    // Called from randomizeStats/randomizeUpgradeStats, so it covers mob drops, reactor drops,
+    // script/gachapon items and forged (maker) items automatically. Shop items skip it.
+    private static void applyGodly(Equip equip) {
+        if (!YamlConfig.config.server.USE_GODLY_ITEMS) {
+            return;
+        }
+        int chance = Math.max(1, YamlConfig.config.server.GODLY_ITEM_CHANCE);
+        if (Randomizer.nextInt(chance) != 0) {
+            return;
+        }
+        int max = YamlConfig.config.server.GODLY_ITEM_MAX_BONUS;
+        if (max < 1) {
+            return;
+        }
+        equip.setStr(godlyStat(equip.getStr(), max));
+        equip.setDex(godlyStat(equip.getDex(), max));
+        equip.setInt(godlyStat(equip.getInt(), max));
+        equip.setLuk(godlyStat(equip.getLuk(), max));
+        equip.setWatk(godlyStat(equip.getWatk(), max));
+        equip.setMatk(godlyStat(equip.getMatk(), max));
+        equip.setWdef(godlyStat(equip.getWdef(), max));
+        equip.setMdef(godlyStat(equip.getMdef(), max));
+        equip.setAcc(godlyStat(equip.getAcc(), max));
+        equip.setAvoid(godlyStat(equip.getAvoid(), max));
+        equip.setSpeed(godlyStat(equip.getSpeed(), max));
+        equip.setJump(godlyStat(equip.getJump(), max));
+        equip.setHp(godlyStat(equip.getHp(), max));
+        equip.setMp(godlyStat(equip.getMp(), max));
+    }
+
+    private static short godlyStat(short value, int max) {
+        if (value <= 0) {
+            return value;
+        }
+        int bonus = Randomizer.nextInt(max + 1); // 0..max
+        return (short) Math.min(Short.MAX_VALUE, value + bonus);
     }
 
     public StatEffect getItemEffect(int itemId) {

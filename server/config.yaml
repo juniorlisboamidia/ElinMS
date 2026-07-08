@@ -289,6 +289,11 @@ server:
   MAX_EQUIPMNT_LVLUP_STAT_UP: 10000
   MAX_EQUIPMNT_STAT: 32767
   USE_EQUIPMNT_LVLUP: 1
+  # Godly Items (estilo MapleRoyals): ao ganhar um equip de fonte aleatoria (drop/gacha/forja),
+  # 1/CHANCE de virar godly -> soma +0..MAX_BONUS em cada stat, podendo exceder o "perfeito" normal.
+  USE_GODLY_ITEMS: true
+  GODLY_ITEM_CHANCE: 10
+  GODLY_ITEM_MAX_BONUS: 5
   USE_CHAIR_EXTRAHEAL: false
   CHAIR_EXTRA_HEAL_MULTIPLIER: 10
   CHAIR_EXTRA_HEAL_MAX_DELAY: 21

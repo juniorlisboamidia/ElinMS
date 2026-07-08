@@ -240,6 +240,11 @@ public class ServerConfig {
     public int MAX_EQUIPMNT_STAT;
     public int USE_EQUIPMNT_LVLUP;
 
+    //Godly Items (MapleRoyals-style)
+    public boolean USE_GODLY_ITEMS;
+    public int GODLY_ITEM_CHANCE;
+    public int GODLY_ITEM_MAX_BONUS;
+
     //Map-Chair Configuration
     public boolean USE_CHAIR_EXTRAHEAL;
     public byte CHAIR_EXTRA_HEAL_MULTIPLIER;
