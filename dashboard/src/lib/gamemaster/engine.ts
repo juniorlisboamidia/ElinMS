@@ -74,6 +74,7 @@ const WRITE_TOOLS = new Set([
   "set_job", "set_level",
   "give_item", "teleport",
   "max_stats", "give_skill", "cure", "set_gm", "hide_player", "unjail_player",
+  "kill_all_mobs", "clear_drops", "map_effect",
   "update_mob", "batch_update_mobs",
   "add_mob_drop", "remove_mob_drop", "batch_update_drops",
   "add_map_spawn", "remove_map_spawn",
@@ -262,6 +263,15 @@ export const toolHandlers: Record<string, (args: any) => Promise<string>> = {
 
   unjail_player: async ({ characterName, characterId }) =>
     JSON.stringify(await api("/api/gm/unjail", { method: "POST", body: JSON.stringify({ characterName, characterId }) })),
+
+  kill_all_mobs: async ({ characterName, characterId }) =>
+    JSON.stringify(await api("/api/gm/killmobs", { method: "POST", body: JSON.stringify({ characterName, characterId }) })),
+
+  clear_drops: async ({ characterName, characterId }) =>
+    JSON.stringify(await api("/api/gm/cleardrops", { method: "POST", body: JSON.stringify({ characterName, characterId }) })),
+
+  map_effect: async ({ characterName, characterId, message, effectId }) =>
+    JSON.stringify(await api("/api/gm/mapeffect", { method: "POST", body: JSON.stringify({ characterName, characterId, message, effectId }) })),
 
   grant_nx: async ({ characterId, accountId, amount, type }) =>
     JSON.stringify(await api("/api/gm/nx", { method: "POST", body: JSON.stringify({ characterId, accountId, amount, type: type || "nxCredit" }) })),
@@ -1193,6 +1203,54 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
         properties: {
           characterName: { type: "string", description: "Name of the ONLINE player" },
           characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+        },
+        required: [],
+      },
+    },
+  },
+
+  {
+    type: "function",
+    function: {
+      name: "kill_all_mobs",
+      description: "Instantly kill ALL monsters on the map where an ONLINE player is, LIVE (no restart). Handy to reset a training map, end a mob-invasion event, or clear a stuck spawn. Targets the map of the given online player. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of an ONLINE player on the target map" },
+          characterId: { type: "number", description: "DB ID of an ONLINE player on the target map (alternative to characterName)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "clear_drops",
+      description: "Remove ALL items lying on the ground on the map where an ONLINE player is, LIVE. Useful to clean up a spammed/cluttered map after an event. Targets the map of the given online player. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of an ONLINE player on the target map" },
+          characterId: { type: "number", description: "DB ID of an ONLINE player on the target map (alternative to characterName)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "map_effect",
+      description: "Play a map-wide EFFECT/weather with an on-screen banner on the map where an ONLINE player is, LIVE — great for event atmosphere ('a storm is coming!'). effectId is a weather/effect item id (e.g. 5120009 snow, 5120017); defaults to a snow effect if omitted. Targets the map of the given online player. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of an ONLINE player on the target map" },
+          characterId: { type: "number", description: "DB ID of an ONLINE player on the target map (alternative to characterName)" },
+          message: { type: "string", description: "Banner text shown with the effect" },
+          effectId: { type: "number", description: "Weather/effect item id (default 5120009 = snow)" },
         },
         required: [],
       },

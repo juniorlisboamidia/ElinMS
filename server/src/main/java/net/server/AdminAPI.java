@@ -71,6 +71,9 @@ public class AdminAPI {
             server.createContext("/setgm", this::handleSetGm);
             server.createContext("/hide", this::handleHide);
             server.createContext("/unjail", this::handleUnjail);
+            server.createContext("/killmobs", this::handleKillMobs);
+            server.createContext("/cleardrops", this::handleClearDrops);
+            server.createContext("/mapeffect", this::handleMapEffect);
             server.setExecutor(null);
             server.start();
             log.info("Admin API started on port {}", PORT);
@@ -1138,6 +1141,65 @@ public class AdminAPI {
         }, 0);
         log.info("Admin API: Unjailed {}", target.getName());
         respond(ex, 200, String.format("{\"success\":true,\"character\":\"%s\",\"wasJailed\":%b}", target.getName().replace("\"", "\\\""), wasJailed));
+    }
+
+    private void handleKillMobs(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) { respond(ex, 405, "{\"error\":\"Method not allowed\"}"); return; }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer worldId = extractInt(body, "world");
+        if (worldId == null) worldId = 0;
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) { respond(ex, 500, "{\"error\":\"World not found\"}"); return; }
+        Character target = findOnlinePlayer(world, extractString(body, "characterName"), extractInt(body, "characterId"));
+        if (target == null) { respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player on the target map.\"}"); return; }
+
+        final Character t = target;
+        TimerManager.getInstance().schedule(() -> {
+            try { t.getMap().killAllMonsters(); } catch (Exception e) { log.warn("Admin API: killmobs failed on map of {}", t.getName(), e); }
+        }, 0);
+        log.info("Admin API: Killed all mobs on map {} (via {})", target.getMap().getId(), target.getName());
+        respond(ex, 200, String.format("{\"success\":true,\"mapId\":%d}", target.getMap().getId()));
+    }
+
+    private void handleClearDrops(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) { respond(ex, 405, "{\"error\":\"Method not allowed\"}"); return; }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer worldId = extractInt(body, "world");
+        if (worldId == null) worldId = 0;
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) { respond(ex, 500, "{\"error\":\"World not found\"}"); return; }
+        Character target = findOnlinePlayer(world, extractString(body, "characterName"), extractInt(body, "characterId"));
+        if (target == null) { respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player on the target map.\"}"); return; }
+
+        final Character t = target;
+        TimerManager.getInstance().schedule(() -> {
+            try { t.getMap().clearDrops(); } catch (Exception e) { log.warn("Admin API: cleardrops failed on map of {}", t.getName(), e); }
+        }, 0);
+        log.info("Admin API: Cleared drops on map {} (via {})", target.getMap().getId(), target.getName());
+        respond(ex, 200, String.format("{\"success\":true,\"mapId\":%d}", target.getMap().getId()));
+    }
+
+    private void handleMapEffect(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) { respond(ex, 405, "{\"error\":\"Method not allowed\"}"); return; }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        String message = extractString(body, "message");
+        Integer effectId = extractInt(body, "effectId");
+        Integer worldId = extractInt(body, "world");
+        if (message == null) message = "";
+        final int fEffect = (effectId != null) ? effectId : 5120009; // default: a weather/snow effect
+        if (worldId == null) worldId = 0;
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) { respond(ex, 500, "{\"error\":\"World not found\"}"); return; }
+        Character target = findOnlinePlayer(world, extractString(body, "characterName"), extractInt(body, "characterId"));
+        if (target == null) { respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player on the target map.\"}"); return; }
+
+        final Character t = target;
+        final String fMsg = message;
+        TimerManager.getInstance().schedule(() -> {
+            try { t.getMap().startMapEffect(fMsg, fEffect); } catch (Exception e) { log.warn("Admin API: mapeffect failed on map of {}", t.getName(), e); }
+        }, 0);
+        log.info("Admin API: Map effect on map {} (via {}) effect={}", target.getMap().getId(), target.getName(), fEffect);
+        respond(ex, 200, String.format("{\"success\":true,\"mapId\":%d,\"effectId\":%d}", target.getMap().getId(), fEffect));
     }
 
     private void loadRatesFromDb() {
