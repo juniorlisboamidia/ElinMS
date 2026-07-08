@@ -74,6 +74,8 @@ public class AdminAPI {
             server.createContext("/killmobs", this::handleKillMobs);
             server.createContext("/cleardrops", this::handleClearDrops);
             server.createContext("/mapeffect", this::handleMapEffect);
+            server.createContext("/resetstats", this::handleResetStats);
+            server.createContext("/setstats", this::handleSetStats);
             server.setExecutor(null);
             server.start();
             log.info("Admin API started on port {}", PORT);
@@ -984,6 +986,113 @@ public class AdminAPI {
         respond(ex, 200, String.format(
             "{\"success\":true,\"character\":\"%s\",\"fromLevel\":%d,\"toLevel\":%d}",
             target.getName().replace("\"", "\\\""), currentLevel, targetLevel
+        ));
+    }
+
+    // Reset an ONLINE player's AP LIVE: STR/DEX/INT/LUK go back to the class base and all
+    // spent points return as free AP, exactly like an AP-reset scroll. Works on the in-memory
+    // character (survives autosave), unlike update_character which only writes the DB.
+    private void handleResetStats(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+        if (worldId == null) worldId = 0;
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        final Character rsTarget = target;
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                rsTarget.resetStats();
+            } catch (Exception e) {
+                log.warn("Admin API: reset stats failed for {}", rsTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Reset stats of {}", target.getName());
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"character\":\"%s\",\"note\":\"Stats reset live; STR/DEX/INT/LUK back to class base, all points returned as free AP.\"}",
+            target.getName().replace("\"", "\\\"")
+        ));
+    }
+
+    // Set an ONLINE player's STR/DEX/INT/LUK (and optionally free AP, max HP, max MP) LIVE.
+    // Any omitted stat keeps its current value. Applies to the in-memory character (survives
+    // autosave), unlike update_character which only writes the DB and gets overwritten online.
+    private void handleSetStats(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        final Integer str = extractInt(body, "str");
+        final Integer dex = extractInt(body, "dex");
+        final Integer intt = extractInt(body, "int");
+        final Integer luk = extractInt(body, "luk");
+        final Integer ap = extractInt(body, "ap");
+        final Integer maxhp = extractInt(body, "maxhp");
+        final Integer maxmp = extractInt(body, "maxmp");
+        String characterName = extractString(body, "characterName");
+        Integer characterId = extractInt(body, "characterId");
+        Integer worldId = extractInt(body, "world");
+        if (worldId == null) worldId = 0;
+
+        if (str == null && dex == null && intt == null && luk == null && ap == null && maxhp == null && maxmp == null) {
+            respond(ex, 400, "{\"error\":\"Provide at least one of: str, dex, int, luk, ap, maxhp, maxmp\"}");
+            return;
+        }
+
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) {
+            respond(ex, 500, "{\"error\":\"World not found\"}");
+            return;
+        }
+
+        Character target = findOnlinePlayer(world, characterName, characterId);
+        if (target == null) {
+            respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}");
+            return;
+        }
+
+        final Character ssTarget = target;
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                int fstr = str != null ? str : ssTarget.getStr();
+                int fdex = dex != null ? dex : ssTarget.getDex();
+                int fint = intt != null ? intt : ssTarget.getInt();
+                int fluk = luk != null ? luk : ssTarget.getLuk();
+                int fap = ap != null ? ap : ssTarget.getRemainingAp();
+                ssTarget.setStatsLive(fstr, fdex, fint, fluk, fap);
+                if (maxhp != null || maxmp != null) {
+                    ssTarget.updateMaxHpMaxMp(
+                        maxhp != null ? maxhp : ssTarget.getMaxHp(),
+                        maxmp != null ? maxmp : ssTarget.getMaxMp());
+                }
+            } catch (Exception e) {
+                log.warn("Admin API: set stats failed for {}", ssTarget.getName(), e);
+            }
+        }, 0);
+
+        log.info("Admin API: Set stats of {} (str={} dex={} int={} luk={} ap={} maxhp={} maxmp={})",
+                target.getName(), str, dex, intt, luk, ap, maxhp, maxmp);
+        respond(ex, 200, String.format(
+            "{\"success\":true,\"character\":\"%s\"}",
+            target.getName().replace("\"", "\\\"")
         ));
     }
 

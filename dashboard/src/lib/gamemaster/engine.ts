@@ -71,7 +71,7 @@ const WRITE_TOOLS = new Set([
   "spawn_mob", "heal_player", "give_meso",
   "buff_player", "kick_player", "message_player",
   "give_fame", "jail_player", "mute_map",
-  "set_job", "set_level",
+  "set_job", "set_level", "reset_stats", "set_stats",
   "give_item", "teleport",
   "max_stats", "give_skill", "cure", "set_gm", "hide_player", "unjail_player",
   "kill_all_mobs", "clear_drops", "map_effect",
@@ -236,6 +236,12 @@ export const toolHandlers: Record<string, (args: any) => Promise<string>> = {
 
   set_level: async ({ characterName, characterId, level }) =>
     JSON.stringify(await api("/api/gm/setlevel", { method: "POST", body: JSON.stringify({ characterName, characterId, level }) })),
+
+  reset_stats: async ({ characterName, characterId }) =>
+    JSON.stringify(await api("/api/gm/resetstats", { method: "POST", body: JSON.stringify({ characterName, characterId }) })),
+
+  set_stats: async ({ characterName, characterId, str, dex, int: intStat, luk, ap, maxhp, maxmp }) =>
+    JSON.stringify(await api("/api/gm/setstats", { method: "POST", body: JSON.stringify({ str, dex, int: intStat, luk, ap, maxhp, maxmp, characterName, characterId }) })),
 
   get_online_players: async () =>
     JSON.stringify(await api("/api/gm/players")),
@@ -805,7 +811,7 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
     type: "function",
     function: {
       name: "update_character",
-      description: "Update character stats in the DB. Takes effect on relog, and reliably ONLY for an OFFLINE player — changes to an ONLINE player get overwritten by the server's autosave. For an ONLINE player use the live tools instead: warp_character (map), set_level (level, grants AP/SP), set_job (class). Allowed fields: level, str, dex, int, luk, maxhp, maxmp, meso, fame, ap, sp, job, map, exp, hp, mp, gm.",
+      description: "Update character stats in the DB. Takes effect on relog, and reliably ONLY for an OFFLINE player — changes to an ONLINE player get overwritten by the server's autosave (even after they relog, because logout saves their in-memory stats over the DB). For an ONLINE player use the live tools instead: set_stats (str/dex/int/luk/ap/maxhp/maxmp), reset_stats (reset AP), warp_character (map), set_level (level, grants AP/SP), set_job (class), give_meso, give_fame. Only fall back to this tool for stats with no live equivalent (e.g. exp) or when the player is offline. Allowed fields: level, str, dex, int, luk, maxhp, maxmp, meso, fame, ap, sp, job, map, exp, hp, mp, gm.",
       parameters: {
         type: "object",
         properties: {
@@ -1071,6 +1077,41 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
           level: { type: "number", description: "Target level (must be above current, max 255)" },
         },
         required: ["level"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "reset_stats",
+      description: "Reset an ONLINE player's AP LIVE (no relog): STR/DEX/INT/LUK go back to the class base and every spent point returns as free AP for the player to redistribute in-game — exactly like an AP-reset scroll. This is the correct tool to 'reset a player's stats' for someone who is ONLINE; do NOT use update_character for that (it only writes the DB and gets overwritten by the server's autosave while the player is online). Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "set_stats",
+      description: "Set an ONLINE player's core stats LIVE (no relog): any of str, dex, int, luk, ap (free AP points), maxhp, maxmp. Omitted fields keep their current value. Applies to the in-memory character so it sticks (unlike update_character, which only writes the DB and is overwritten by autosave while the player is online). Use this to set specific stat values live; use reset_stats to fully reset AP. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+          str: { type: "number", description: "New STR (min 4)" },
+          dex: { type: "number", description: "New DEX (min 4)" },
+          int: { type: "number", description: "New INT (min 4)" },
+          luk: { type: "number", description: "New LUK (min 4)" },
+          ap: { type: "number", description: "Free AP points available to spend" },
+          maxhp: { type: "number", description: "New max HP" },
+          maxmp: { type: "number", description: "New max MP" },
+        },
       },
     },
   },

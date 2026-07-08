@@ -7914,6 +7914,14 @@ public class Character extends AbstractCharacterObject {
         visibleMapObjects.remove(mo);
     }
 
+    // Set STR/DEX/INT/LUK (and free AP) LIVE on the in-memory character, pushing the
+    // stat packets to the client. Exposes the protected updateStrDexIntLuk so the Admin API
+    // (GM live tools) can edit an ONLINE player without the autosave clobbering it. Pass
+    // ap = -1 to keep the current remaining AP untouched.
+    public void setStatsLive(int str, int dex, int int_, int luk, int ap) {
+        updateStrDexIntLuk(str, dex, int_, luk, ap);
+    }
+
     public synchronized void resetStats() {
         if (!YamlConfig.config.server.USE_AUTOASSIGN_STARTERS_AP) {
             return;
