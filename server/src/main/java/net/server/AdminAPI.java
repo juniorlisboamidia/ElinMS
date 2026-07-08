@@ -4,6 +4,7 @@ import client.Character;
 import client.Job;
 import client.Skill;
 import client.SkillFactory;
+import client.Stat;
 import client.inventory.InventoryType;
 import client.inventory.Item;
 import client.inventory.manipulator.InventoryManipulator;
@@ -64,6 +65,12 @@ public class AdminAPI {
             server.createContext("/setjob", this::handleSetJob);
             server.createContext("/setlevel", this::handleSetLevel);
             server.createContext("/players", this::handlePlayers);
+            server.createContext("/maxstats", this::handleMaxStats);
+            server.createContext("/giveskill", this::handleGiveSkill);
+            server.createContext("/cure", this::handleCure);
+            server.createContext("/setgm", this::handleSetGm);
+            server.createContext("/hide", this::handleHide);
+            server.createContext("/unjail", this::handleUnjail);
             server.setExecutor(null);
             server.start();
             log.info("Admin API started on port {}", PORT);
@@ -997,6 +1004,140 @@ public class AdminAPI {
         }
         sb.append("]}");
         respond(ex, 200, sb.toString());
+    }
+
+    private void handleMaxStats(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) { respond(ex, 405, "{\"error\":\"Method not allowed\"}"); return; }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer worldId = extractInt(body, "world");
+        if (worldId == null) worldId = 0;
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) { respond(ex, 500, "{\"error\":\"World not found\"}"); return; }
+        Character target = findOnlinePlayer(world, extractString(body, "characterName"), extractInt(body, "characterId"));
+        if (target == null) { respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}"); return; }
+
+        final Character t = target;
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                t.setLevel(255);
+                t.updateStrDexIntLuk(Short.MAX_VALUE);
+                t.updateMaxHpMaxMp(30000, 30000);
+                t.setFame(13337);
+                t.updateSingleStat(Stat.LEVEL, 255);
+                t.updateSingleStat(Stat.FAME, 13337);
+            } catch (Exception e) { log.warn("Admin API: maxstats failed for {}", t.getName(), e); }
+        }, 0);
+        log.info("Admin API: Maxed stats of {}", target.getName());
+        respond(ex, 200, String.format("{\"success\":true,\"character\":\"%s\"}", target.getName().replace("\"", "\\\"")));
+    }
+
+    private void handleGiveSkill(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) { respond(ex, 405, "{\"error\":\"Method not allowed\"}"); return; }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer skillId = extractInt(body, "skillId");
+        Integer level = extractInt(body, "level");
+        Integer worldId = extractInt(body, "world");
+        if (skillId == null) { respond(ex, 400, "{\"error\":\"skillId is required\"}"); return; }
+        if (worldId == null) worldId = 0;
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) { respond(ex, 500, "{\"error\":\"World not found\"}"); return; }
+        Character target = findOnlinePlayer(world, extractString(body, "characterName"), extractInt(body, "characterId"));
+        if (target == null) { respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}"); return; }
+        Skill skill = SkillFactory.getSkill(skillId);
+        if (skill == null) { respond(ex, 400, String.format("{\"error\":\"Skill ID %d does not exist\"}", skillId)); return; }
+
+        final Character t = target;
+        final Skill sk = skill;
+        final int lvl = (level != null && level > 0) ? Math.min(level, skill.getMaxLevel()) : skill.getMaxLevel();
+        TimerManager.getInstance().schedule(() -> {
+            try { t.changeSkillLevel(sk, (byte) lvl, sk.getMaxLevel(), -1); }
+            catch (Exception e) { log.warn("Admin API: giveskill failed for {}", t.getName(), e); }
+        }, 0);
+        log.info("Admin API: Gave skill {} lvl {} to {}", skillId, lvl, target.getName());
+        respond(ex, 200, String.format("{\"success\":true,\"character\":\"%s\",\"skillId\":%d,\"level\":%d}", target.getName().replace("\"", "\\\""), skillId, lvl));
+    }
+
+    private void handleCure(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) { respond(ex, 405, "{\"error\":\"Method not allowed\"}"); return; }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer worldId = extractInt(body, "world");
+        if (worldId == null) worldId = 0;
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) { respond(ex, 500, "{\"error\":\"World not found\"}"); return; }
+        Character target = findOnlinePlayer(world, extractString(body, "characterName"), extractInt(body, "characterId"));
+        if (target == null) { respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}"); return; }
+
+        final Character t = target;
+        TimerManager.getInstance().schedule(() -> {
+            try { t.dispelDebuffs(); } catch (Exception e) { log.warn("Admin API: cure failed for {}", t.getName(), e); }
+        }, 0);
+        log.info("Admin API: Cured debuffs of {}", target.getName());
+        respond(ex, 200, String.format("{\"success\":true,\"character\":\"%s\"}", target.getName().replace("\"", "\\\"")));
+    }
+
+    private void handleSetGm(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) { respond(ex, 405, "{\"error\":\"Method not allowed\"}"); return; }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer gmLevel = extractInt(body, "gmLevel");
+        Integer worldId = extractInt(body, "world");
+        if (gmLevel == null) { respond(ex, 400, "{\"error\":\"gmLevel is required (0-6)\"}"); return; }
+        if (gmLevel < 0) gmLevel = 0;
+        if (gmLevel > 6) gmLevel = 6;
+        if (worldId == null) worldId = 0;
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) { respond(ex, 500, "{\"error\":\"World not found\"}"); return; }
+        Character target = findOnlinePlayer(world, extractString(body, "characterName"), extractInt(body, "characterId"));
+        if (target == null) { respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}"); return; }
+
+        final Character t = target;
+        final int gl = gmLevel;
+        TimerManager.getInstance().schedule(() -> {
+            try { t.setGMLevel(gl); t.getClient().setGMLevel(gl); }
+            catch (Exception e) { log.warn("Admin API: setgm failed for {}", t.getName(), e); }
+        }, 0);
+        log.info("Admin API: Set GM level of {} to {}", target.getName(), gmLevel);
+        respond(ex, 200, String.format("{\"success\":true,\"character\":\"%s\",\"gmLevel\":%d}", target.getName().replace("\"", "\\\""), gmLevel));
+    }
+
+    private void handleHide(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) { respond(ex, 405, "{\"error\":\"Method not allowed\"}"); return; }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer worldId = extractInt(body, "world");
+        if (worldId == null) worldId = 0;
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) { respond(ex, 500, "{\"error\":\"World not found\"}"); return; }
+        Character target = findOnlinePlayer(world, extractString(body, "characterName"), extractInt(body, "characterId"));
+        if (target == null) { respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}"); return; }
+
+        final Character t = target;
+        // Apply the GM Hide skill (9101004) — makes the target invisible to other players
+        TimerManager.getInstance().schedule(() -> {
+            try {
+                Skill hide = SkillFactory.getSkill(9101004);
+                if (hide != null) hide.getEffect(hide.getMaxLevel()).applyTo(t);
+            } catch (Exception e) { log.warn("Admin API: hide failed for {}", t.getName(), e); }
+        }, 0);
+        log.info("Admin API: Hid {}", target.getName());
+        respond(ex, 200, String.format("{\"success\":true,\"character\":\"%s\"}", target.getName().replace("\"", "\\\"")));
+    }
+
+    private void handleUnjail(HttpExchange ex) throws IOException {
+        if (!"POST".equals(ex.getRequestMethod())) { respond(ex, 405, "{\"error\":\"Method not allowed\"}"); return; }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Integer worldId = extractInt(body, "world");
+        if (worldId == null) worldId = 0;
+        World world = Server.getInstance().getWorld(worldId);
+        if (world == null) { respond(ex, 500, "{\"error\":\"World not found\"}"); return; }
+        Character target = findOnlinePlayer(world, extractString(body, "characterName"), extractInt(body, "characterId"));
+        if (target == null) { respond(ex, 400, "{\"error\":\"No online player found. Provide characterName/characterId of an ONLINE player.\"}"); return; }
+
+        final Character t = target;
+        final boolean wasJailed = target.getJailExpirationTimeLeft() > 0;
+        TimerManager.getInstance().schedule(() -> {
+            try { t.removeJailExpirationTime(); } catch (Exception e) { log.warn("Admin API: unjail failed for {}", t.getName(), e); }
+        }, 0);
+        log.info("Admin API: Unjailed {}", target.getName());
+        respond(ex, 200, String.format("{\"success\":true,\"character\":\"%s\",\"wasJailed\":%b}", target.getName().replace("\"", "\\\""), wasJailed));
     }
 
     private void loadRatesFromDb() {

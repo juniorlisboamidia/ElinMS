@@ -73,6 +73,7 @@ const WRITE_TOOLS = new Set([
   "give_fame", "jail_player", "mute_map",
   "set_job", "set_level",
   "give_item", "teleport",
+  "max_stats", "give_skill", "cure", "set_gm", "hide_player", "unjail_player",
   "update_mob", "batch_update_mobs",
   "add_mob_drop", "remove_mob_drop", "batch_update_drops",
   "add_map_spawn", "remove_map_spawn",
@@ -243,6 +244,24 @@ export const toolHandlers: Record<string, (args: any) => Promise<string>> = {
 
   teleport: async ({ characterId, mapId }) =>
     JSON.stringify(await api("/api/gm/smart-teleport", { method: "POST", body: JSON.stringify({ characterId, mapId }) })),
+
+  max_stats: async ({ characterName, characterId }) =>
+    JSON.stringify(await api("/api/gm/maxstats", { method: "POST", body: JSON.stringify({ characterName, characterId }) })),
+
+  give_skill: async ({ characterName, characterId, skillId, level }) =>
+    JSON.stringify(await api("/api/gm/giveskill", { method: "POST", body: JSON.stringify({ characterName, characterId, skillId, level }) })),
+
+  cure: async ({ characterName, characterId }) =>
+    JSON.stringify(await api("/api/gm/cure", { method: "POST", body: JSON.stringify({ characterName, characterId }) })),
+
+  set_gm: async ({ characterName, characterId, gmLevel }) =>
+    JSON.stringify(await api("/api/gm/setgm", { method: "POST", body: JSON.stringify({ characterName, characterId, gmLevel }) })),
+
+  hide_player: async ({ characterName, characterId }) =>
+    JSON.stringify(await api("/api/gm/hide", { method: "POST", body: JSON.stringify({ characterName, characterId }) })),
+
+  unjail_player: async ({ characterName, characterId }) =>
+    JSON.stringify(await api("/api/gm/unjail", { method: "POST", body: JSON.stringify({ characterName, characterId }) })),
 
   grant_nx: async ({ characterId, accountId, amount, type }) =>
     JSON.stringify(await api("/api/gm/nx", { method: "POST", body: JSON.stringify({ characterId, accountId, amount, type: type || "nxCredit" }) })),
@@ -1082,6 +1101,100 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
           mapId: { type: "number", description: "Destination map ID (verify with search_maps)" },
         },
         required: ["characterId", "mapId"],
+      },
+    },
+  },
+
+  {
+    type: "function",
+    function: {
+      name: "max_stats",
+      description: "Max out an ONLINE player's stats (godmode), LIVE: level 255, max STR/DEX/INT/LUK, 30000 HP/MP, high fame. Big hammer — use for testing or a special reward. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "give_skill",
+      description: "Grant a skill to an ONLINE player at a given level, LIVE (max level by default). Pass the skill ID. Returns an error if the player is offline or the skill ID is invalid.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+          skillId: { type: "number", description: "Skill ID to grant" },
+          level: { type: "number", description: "Skill level (default = the skill's max level)" },
+        },
+        required: ["skillId"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "cure",
+      description: "Remove ALL debuffs/abnormal statuses (seal, stun, poison, darkness, weakness, curse, slow, etc.) from an ONLINE player, LIVE. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "set_gm",
+      description: "Set an ONLINE player's GM level (0-6), LIVE. 0 = normal player, higher = more GM command access. Use to promote a trusted player or demote back to normal. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+          gmLevel: { type: "number", description: "New GM level, 0-6 (0 = normal player)" },
+        },
+        required: ["gmLevel"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "hide_player",
+      description: "Make an ONLINE player invisible to other players (GM hide), LIVE. Useful to observe unseen. It wears off on relog. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "unjail_player",
+      description: "Free an ONLINE player from jail, LIVE (the complement of jail_player). Returns wasJailed=false if they weren't jailed. Returns an error if the player is offline.",
+      parameters: {
+        type: "object",
+        properties: {
+          characterName: { type: "string", description: "Name of the ONLINE player" },
+          characterId: { type: "number", description: "DB ID of the ONLINE player (alternative to characterName)" },
+        },
+        required: [],
       },
     },
   },
