@@ -72,6 +72,7 @@ const WRITE_TOOLS = new Set([
   "buff_player", "kick_player", "message_player",
   "give_fame", "jail_player", "mute_map",
   "set_job", "set_level",
+  "give_item", "teleport",
   "update_mob", "batch_update_mobs",
   "add_mob_drop", "remove_mob_drop", "batch_update_drops",
   "add_map_spawn", "remove_map_spawn",
@@ -233,6 +234,15 @@ export const toolHandlers: Record<string, (args: any) => Promise<string>> = {
 
   set_level: async ({ characterName, characterId, level }) =>
     JSON.stringify(await api("/api/gm/setlevel", { method: "POST", body: JSON.stringify({ characterName, characterId, level }) })),
+
+  get_online_players: async () =>
+    JSON.stringify(await api("/api/gm/players")),
+
+  give_item: async ({ characterId, itemId, quantity }) =>
+    JSON.stringify(await api("/api/gm/smart-give", { method: "POST", body: JSON.stringify({ characterId, itemId, quantity: quantity || 1 }) })),
+
+  teleport: async ({ characterId, mapId }) =>
+    JSON.stringify(await api("/api/gm/smart-teleport", { method: "POST", body: JSON.stringify({ characterId, mapId }) })),
 
   grant_nx: async ({ characterId, accountId, amount, type }) =>
     JSON.stringify(await api("/api/gm/nx", { method: "POST", body: JSON.stringify({ characterId, accountId, amount, type: type || "nxCredit" }) })),
@@ -1032,6 +1042,46 @@ const toolSchemas: OpenAI.ChatCompletionTool[] = [
           level: { type: "number", description: "Target level (must be above current, max 255)" },
         },
         required: ["level"],
+      },
+    },
+  },
+
+  {
+    type: "function",
+    function: {
+      name: "get_online_players",
+      description: "List the players currently ONLINE right now — returns id, name, level, job and mapId for each. ALWAYS call this first before any live action: the live tools (teleport/warp_character, give_item_live, heal_player, spawn_mob, buff_player, give_meso, give_fame, set_level, set_job, kick_player, etc.) only work on players who are online, and this tells you exactly who is online and where they are.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "give_item",
+      description: "Give an item to a player, choosing the right method AUTOMATICALLY: if the player is ONLINE it's added live to their inventory; if OFFLINE it's written to the DB (applies on their next login). Prefer this over give_item_live / give_item_to_character when you're not sure whether the player is online. Requires characterId (get it from get_online_players or search_characters). The response includes applied: \"live\" or \"offline\".",
+      parameters: {
+        type: "object",
+        properties: {
+          characterId: { type: "number", description: "DB ID of the character" },
+          itemId: { type: "number", description: "Item ID (verify with search_items)" },
+          quantity: { type: "number", description: "Stack quantity (default 1)" },
+        },
+        required: ["characterId", "itemId"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "teleport",
+      description: "Teleport a player to a map, choosing the right method AUTOMATICALLY: if the player is ONLINE they're warped instantly (live); if OFFLINE the map is set in the DB (applies on their next login). Prefer this over warp_character / update_character when you're not sure whether the player is online. Requires characterId. Verify mapId with search_maps. The response includes applied: \"live\" or \"offline\".",
+      parameters: {
+        type: "object",
+        properties: {
+          characterId: { type: "number", description: "DB ID of the character" },
+          mapId: { type: "number", description: "Destination map ID (verify with search_maps)" },
+        },
+        required: ["characterId", "mapId"],
       },
     },
   },

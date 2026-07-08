@@ -63,6 +63,7 @@ public class AdminAPI {
             server.createContext("/mutemap", this::handleMuteMap);
             server.createContext("/setjob", this::handleSetJob);
             server.createContext("/setlevel", this::handleSetLevel);
+            server.createContext("/players", this::handlePlayers);
             server.setExecutor(null);
             server.start();
             log.info("Admin API started on port {}", PORT);
@@ -974,6 +975,28 @@ public class AdminAPI {
             "{\"success\":true,\"character\":\"%s\",\"fromLevel\":%d,\"toLevel\":%d}",
             target.getName().replace("\"", "\\\""), currentLevel, targetLevel
         ));
+    }
+
+    private void handlePlayers(HttpExchange ex) throws IOException {
+        if (!"GET".equals(ex.getRequestMethod())) {
+            respond(ex, 405, "{\"error\":\"Method not allowed\"}");
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("{\"players\":[");
+        boolean first = true;
+        for (World w : Server.getInstance().getWorlds()) {
+            for (Character chr : w.getPlayerStorage().getAllCharacters()) {
+                if (!first) sb.append(",");
+                first = false;
+                sb.append(String.format(
+                    "{\"id\":%d,\"name\":\"%s\",\"level\":%d,\"job\":%d,\"mapId\":%d}",
+                    chr.getId(), chr.getName().replace("\"", "\\\""), chr.getLevel(), chr.getJob().getId(), chr.getMapId()
+                ));
+            }
+        }
+        sb.append("]}");
+        respond(ex, 200, sb.toString());
     }
 
     private void loadRatesFromDb() {
