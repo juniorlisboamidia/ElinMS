@@ -18,26 +18,26 @@ const Editor = dynamic(
       const theme = view.EditorView.theme(
         {
           "&": {
-            backgroundColor: "#12121f",
-            color: "#e8e8f0",
+            backgroundColor: "#0f1d15",
+            color: "#e8f1ea",
             height: "100%",
             fontSize: "13px",
           },
           ".cm-gutters": {
-            backgroundColor: "#0a0a12",
-            color: "#55556a",
+            backgroundColor: "#0a140e",
+            color: "#5e746a",
             border: "none",
-            borderRight: "1px solid #2a2a45",
+            borderRight: "1px solid #2c4a37",
           },
-          ".cm-activeLineGutter": { backgroundColor: "#1a1a2e" },
-          ".cm-activeLine": { backgroundColor: "rgba(42, 42, 69, 0.3)" },
+          ".cm-activeLineGutter": { backgroundColor: "#16281c" },
+          ".cm-activeLine": { backgroundColor: "rgba(44, 74, 55, 0.3)" },
           "&.cm-focused .cm-selectionBackground, ::selection": {
-            backgroundColor: "rgba(74, 158, 255, 0.2) !important",
+            backgroundColor: "rgba(55, 198, 212, 0.2) !important",
           },
-          ".cm-cursor, .cm-dropCursor": { borderLeftColor: "#f5c542" },
+          ".cm-cursor, .cm-dropCursor": { borderLeftColor: "#f2c14e" },
           ".cm-matchingBracket": {
-            backgroundColor: "rgba(245, 197, 66, 0.15)",
-            outline: "1px solid rgba(245, 197, 66, 0.3)",
+            backgroundColor: "rgba(242, 193, 78, 0.15)",
+            outline: "1px solid rgba(242, 193, 78, 0.3)",
           },
         },
         { dark: true }

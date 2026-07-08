@@ -63,16 +63,16 @@ interface BreadcrumbEntry {
 const MAPLESTORY_API = "https://maplestory.io/api/GMS/83";
 
 const CATEGORY_COLORS: Record<string, string> = {
-  npcs: "#f5c542",
-  spawns: "#ff5c5c",
-  drops: "#4a9eff",
-  events: "#a78bfa",
-  mobs: "#ff5c5c",
-  shops: "#42d392",
-  reactors: "#fb923c",
+  npcs: "#f2c14e",
+  spawns: "#ff6b6b",
+  drops: "#37c6d4",
+  events: "#b493f2",
+  mobs: "#ff6b6b",
+  shops: "#5bd98a",
+  reactors: "#f0a35b",
   rates: "#06b6d4",
-  config: "#8888a8",
-  other: "#8888a8",
+  config: "#93ac9d",
+  other: "#93ac9d",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -559,7 +559,7 @@ function MapMarker({
           className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold"
           style={{
             backgroundColor: color,
-            color: "#0a0a12",
+            color: "#0a140e",
           }}
         >
           {activity.total}

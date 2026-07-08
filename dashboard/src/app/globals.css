@@ -1,25 +1,33 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg-primary: #0a0a12;
-  --color-bg-secondary: #12121f;
-  --color-bg-card: #1a1a2e;
-  --color-bg-card-hover: #222240;
-  --color-border: #2a2a45;
-  --color-border-light: #3a3a55;
-  --color-accent-gold: #f5c542;
-  --color-accent-blue: #4a9eff;
-  --color-accent-green: #42d392;
-  --color-accent-red: #ff5c5c;
-  --color-accent-purple: #a78bfa;
-  --color-accent-orange: #fb923c;
-  --color-text-primary: #e8e8f0;
-  --color-text-secondary: #8888a8;
-  --color-text-muted: #55556a;
+  /* Ellinia — a cidade dos magos: floresta profunda, folhas, madeira e nevoa magica.
+     Verde-folha e o accent primario; dourado = lanternas/vaga-lumes; teal = nevoa magica;
+     roxo arcano fica so como toque de magia (nao mais o tema). */
+  --color-bg-primary: #0a140e;      /* sombra profunda da floresta */
+  --color-bg-secondary: #0f1d15;    /* copa escura */
+  --color-bg-card: #16281c;         /* casca / musgo */
+  --color-bg-card-hover: #1f3728;   /* folhagem iluminada */
+  --color-border: #2c4a37;          /* borda de musgo */
+  --color-border-light: #3e6149;    /* musgo claro */
+  --color-accent-gold: #f2c14e;     /* lanterna / vaga-lume */
+  --color-accent-blue: #37c6d4;     /* nevoa aquatica magica (teal) */
+  --color-accent-green: #5bd98a;    /* folha / magia (primario) */
+  --color-accent-red: #ff6b6b;      /* erro */
+  --color-accent-purple: #b493f2;   /* arcano suave (magia) */
+  --color-accent-orange: #f0a35b;   /* luz do sol / casca quente */
+  --color-text-primary: #e8f1ea;    /* branco de nevoa */
+  --color-text-secondary: #93ac9d;  /* salvia */
+  --color-text-muted: #5e746a;      /* salvia profunda */
 }
 
 body {
-  background: var(--color-bg-primary);
+  /* luz magica filtrando pela copa: brilho verde no topo-centro + nevoa teal no topo-direita */
+  background:
+    radial-gradient(1100px 620px at 50% -8%, rgba(91, 217, 138, 0.07), transparent 62%),
+    radial-gradient(900px 520px at 88% 6%, rgba(55, 198, 212, 0.05), transparent 60%),
+    var(--color-bg-primary);
+  background-attachment: fixed;
   color: var(--color-text-primary);
 }
 

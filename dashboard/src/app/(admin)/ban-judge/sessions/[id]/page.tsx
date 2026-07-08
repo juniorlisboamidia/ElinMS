@@ -51,7 +51,7 @@ const VERDICT_COLORS: Record<string, string> = {
   ban: "bg-accent-red/10 text-accent-red",
   warn: "bg-accent-orange/10 text-accent-orange",
   watch: "bg-accent-gold/10 text-accent-gold",
-  escalate: "bg-purple-500/10 text-purple-400",
+  escalate: "bg-accent-purple/10 text-accent-purple",
   innocent: "bg-accent-green/10 text-accent-green",
 };
 
