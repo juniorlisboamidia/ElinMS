@@ -55,6 +55,7 @@ import client.command.commands.gm0.FeedbackCommand;
 import client.command.commands.gm0.RecalcHpCommand;
 import client.command.commands.gm0.WorldChatCommand;
 import client.command.commands.gm0.FmCommand;
+import client.command.commands.gm0.ShopCommand;
 import client.command.commands.gm1.BossHpCommand;
 import client.command.commands.gm1.BuffMeCommand;
 import client.command.commands.gm1.GotoCommand;
@@ -347,6 +348,7 @@ public class CommandsExecutor {
         addCommand(new String[]{"help", "commands"}, HelpCommand.class);
         addCommand("droplimit", DropLimitCommand.class);
         addCommand("time", TimeCommand.class);
+        addCommand("shop", ShopCommand.class);
         addCommand("credits", StaffCommand.class);
         addCommand("uptime", UptimeCommand.class);
         addCommand("gacha", GachaCommand.class);
