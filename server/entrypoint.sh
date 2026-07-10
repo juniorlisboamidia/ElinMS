@@ -3,6 +3,14 @@ set -e
 
 CONFIG="/opt/server/config.yaml"
 
+# Local dev: if a host config.yaml is mounted read-only at config.host.yaml, copy it
+# to the real path so edits from the dashboard apply on restart (no rebuild). The copy
+# is a normal container file, so the sed -i below works — you can't sed -i a bind mount
+# (it renames over the file, which fails with "Device or resource busy").
+if [ -f /opt/server/config.host.yaml ]; then
+  cp -f /opt/server/config.host.yaml "$CONFIG"
+fi
+
 # Use exact key matching (anchored to line start with spaces) to avoid partial matches
 # Config format: "  KEY: value" (2 spaces indent under server:)
 

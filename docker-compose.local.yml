@@ -31,6 +31,11 @@ services:
       # Mount local WZ files (includes our custom items)
       - ./server/wz:/opt/server/wz
       - ./server/scripts:/opt/server/scripts
+      # Mount config.yaml (read-only, side path) so flag/numeric changes from the
+      # dashboard apply after a `restart server` (no rebuild). entrypoint.sh copies it
+      # to the real path at boot; the server still reads config only at boot, so a
+      # restart is required — but no image rebuild. DB_HOST comes from the env override.
+      - ./server/config.yaml:/opt/server/config.host.yaml:ro
     depends_on:
       db:
         condition: service_healthy
@@ -55,6 +60,9 @@ services:
       # mudancas de rate/drop/announce e o check de status nao chegam no servidor.
       GAME_API_URL: "http://server:8585"
       GAME_SERVER_HOST: "server"
+      # Alocacao de ID de item custom: aponta pro WZ do server montado em /cosmic (./server:/cosmic).
+      # Sem isto, next-id nao enxerga os WZ e pode colidir de ID com itens base.
+      WZ_ROOT: "/cosmic/wz"
     volumes:
       - ./dashboard:/app
       - dashboard_node_modules:/app/node_modules
