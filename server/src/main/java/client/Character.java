@@ -6956,11 +6956,13 @@ public class Character extends AbstractCharacterObject {
                             Equip equip = (Equip) item.getLeft();
                             if (equip.getRingId() > -1) {
                                 Ring ring = Ring.loadFromDb(equip.getRingId());
-                                if (item.getRight().equals(InventoryType.EQUIPPED)) {
-                                    ring.equip();
-                                }
+                                if (ring != null) {   // guard: a dangling ringId (no rings row) must not crash login
+                                    if (item.getRight().equals(InventoryType.EQUIPPED)) {
+                                        ring.equip();
+                                    }
 
-                                ret.addPlayerRing(ring);
+                                    ret.addPlayerRing(ring);
+                                }
                             }
                         }
                     }
