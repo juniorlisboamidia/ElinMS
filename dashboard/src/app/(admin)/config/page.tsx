@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import ServerControls from "@/components/ServerControls";
+import ConfigLabel from "@/components/ConfigLabel";
 
 /* ── types ──────────────────────────────────────────────────────── */
 
@@ -544,9 +545,7 @@ export default function ConfigPage() {
                       className="flex items-center justify-between rounded-lg border border-border bg-bg-secondary px-3.5 py-2.5"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="truncate text-xs font-medium text-text-primary">
-                          {key}
-                        </span>
+                        <ConfigLabel name={key} />
                         {feedback?.key === key && (
                           <span
                             className={`shrink-0 text-[10px] font-bold ${
@@ -586,9 +585,7 @@ export default function ConfigPage() {
                   key={key}
                   className="flex items-center justify-between rounded-lg border border-border bg-bg-secondary px-3.5 py-2.5"
                 >
-                  <span className="text-xs font-medium text-text-primary">
-                    {key}
-                  </span>
+                  <ConfigLabel name={key} />
                   <Toggle
                     checked={val}
                     onChange={(v) => handleToggle(key, v)}
@@ -606,9 +603,7 @@ export default function ConfigPage() {
                 key={key}
                 className="flex items-center gap-2 rounded-lg border border-border bg-bg-secondary px-3.5 py-2.5"
               >
-                <span className="flex-1 truncate text-xs font-medium text-text-primary">
-                  {key}
-                </span>
+                <ConfigLabel name={key} className="flex-1" />
                 <input
                   type="number"
                   value={editVal}
@@ -647,9 +642,7 @@ export default function ConfigPage() {
                 key={key}
                 className="flex items-center gap-2 rounded-lg border border-border bg-bg-secondary px-3.5 py-2.5"
               >
-                <span className="flex-1 truncate text-xs font-medium text-text-primary">
-                  {key}
-                </span>
+                <ConfigLabel name={key} className="flex-1" />
                 <input
                   type="number"
                   value={editVal}
