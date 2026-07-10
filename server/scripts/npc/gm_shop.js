@@ -15,7 +15,8 @@ var CATS = [
   ["Pirate", [["Hat",[8042]],["Overall",[8043]],["Shoes",[8044]],["Gloves",[8045]],["Gun",[8046]],["Knuckle",[8047]]]],
   ["Common", [["Hat",[8048,8049]],["Top",[8050]],["Overall",[8051]],["Bottom",[8052]],["Shoes",[8053]],["Gloves",[8054]],["Shield",[8055]],["Earrings",[8056]],["Eye",[8057]],["Face",[8058]],["Cape",[8059]],["Pendants",[8060]],["Rings",[8061]],["Belt",[8062]],["Medal",[8063,8064]]]],
   ["Use", [["Potions",[8065]],["Arrows",[8066]],["Stars",[8067]],["Bullets",[8068]],["Skill Book",[8069,8070]],["Etc",[8071,8072,8073,8074,8075,8076,8077,8078,8079,8080,8081,8082,8083]]]],
-  ["Scroll", [["Especiais (Chaos/White)",[8084]],["Armour",[8085,8086,8087,8088]],["Weapon",[8089,8090,8091]],["Accessory",[8092,8093]],["Pet Equip",[8094]],["Misc",[8095]]]]
+  ["Scroll", [["Especiais (Chaos/White)",[8084]],["Armour",[8085,8086,8087,8088]],["Weapon",[8089,8090,8091]],["Accessory",[8092,8093]],["Pet Equip",[8094]],["Misc",[8095]]]],
+  ["Chairs", [["Todas as Cadeiras",[8096]]]]
 ];
 
 var state, selCat, selSub;
